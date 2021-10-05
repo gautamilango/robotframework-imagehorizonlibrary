@@ -17,7 +17,7 @@ class TestScreenshot(TestCase):
         self.mock = MagicMock()
         self.patcher = patch.dict('sys.modules', {'pyautogui': self.mock})
         self.patcher.start()
-        from ImageHorizonLibrary import ImageHorizonLibrary
+        from src.ImageHorizonLibrary import ImageHorizonLibrary
         self.lib = ImageHorizonLibrary()
 
     def tearDown(self):
@@ -42,7 +42,7 @@ class TestScreenshot(TestCase):
             self._take_screenshot_many_times('SuiteName-screenshot-%d.png')
 
     def test_take_a_screenshot_with_invalid_folder(self):
-        from ImageHorizonLibrary import ScreenshotFolderException
+        from src.ImageHorizonLibrary import ScreenshotFolderException
 
         for index, invalid_folder in enumerate((None, 0, False), 1):
             self.lib.screenshot_folder = invalid_folder

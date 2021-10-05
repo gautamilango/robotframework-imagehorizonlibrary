@@ -8,7 +8,7 @@ class TestOperatingSystem(TestCase):
     def setUp(self):
         self.patcher = patch.dict('sys.modules', {'pyautogui': MagicMock()})
         self.patcher.start()
-        from ImageHorizonLibrary import ImageHorizonLibrary
+        from src.ImageHorizonLibrary import ImageHorizonLibrary
         self.lib = ImageHorizonLibrary()
 
     def tearDown(self):
@@ -39,12 +39,12 @@ class TestOperatingSystem(TestCase):
 
 
     def test_terminate_application_when_application_was_not_launched(self):
-        from ImageHorizonLibrary import OSException
+        from src.ImageHorizonLibrary import OSException
         with self.assertRaises(OSException):
             self.lib.terminate_application()
 
     def test_terminate_application(self):
-        from ImageHorizonLibrary import OSException
+        from src.ImageHorizonLibrary import OSException
         mock = MagicMock()
         with patch('subprocess.Popen',
                    autospec=True,

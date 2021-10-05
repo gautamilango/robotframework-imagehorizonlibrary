@@ -9,7 +9,7 @@ class TestMouse(TestCase):
         self.mock = MagicMock()
         self.patcher = patch.dict('sys.modules', {'pyautogui': self.mock})
         self.patcher.start()
-        from ImageHorizonLibrary import ImageHorizonLibrary, MouseException
+        from src.ImageHorizonLibrary import ImageHorizonLibrary, MouseException
         self.lib = ImageHorizonLibrary()
 
     def tearDown(self):
@@ -27,7 +27,7 @@ class TestMouse(TestCase):
                            call(10, 0, button='left', interval=0.0, clicks=1)])
 
     def _verify_directional_clicks_fail(self, direction, kwargs):
-        from ImageHorizonLibrary import MouseException
+        from src.ImageHorizonLibrary import MouseException
 
         fn = getattr(self.lib, 'click_to_the_%s_of' % direction)
         with self.assertRaises(MouseException):
@@ -48,7 +48,7 @@ class TestMouse(TestCase):
             self._verify_directional_clicks_fail(*args)
 
     def _verify_move_to_fails(self, *args):
-        from ImageHorizonLibrary import MouseException
+        from src.ImageHorizonLibrary import MouseException
         with self.assertRaises(MouseException):
             self.lib.move_to(*args)
 

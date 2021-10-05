@@ -13,10 +13,10 @@ class TestRecognizeImages(TestCase):
         self.mock = MagicMock()
         self.patcher = patch.dict('sys.modules', {'pyautogui': self.mock})
         self.patcher.start()
-        from ImageHorizonLibrary import ImageHorizonLibrary
+        from src.ImageHorizonLibrary import ImageHorizonLibrary
         self.lib = ImageHorizonLibrary(reference_folder=TESTIMG_DIR)
-        self.locate = 'ImageHorizonLibrary.ImageHorizonLibrary.locate'
-        self._locate = 'ImageHorizonLibrary.ImageHorizonLibrary._locate'
+        self.locate = 'src.ImageHorizonLibrary.ImageHorizonLibrary.locate'
+        self._locate = 'src.ImageHorizonLibrary.ImageHorizonLibrary._locate'
 
     def tearDown(self):
         self.mock.reset_mock()
@@ -46,7 +46,7 @@ class TestRecognizeImages(TestCase):
             self.mock.click.assert_called_once_with((0, 0))
 
     def _call_all_directional_functions(self, fn_name):
-        from ImageHorizonLibrary import ImageHorizonLibrary
+        from src.ImageHorizonLibrary import ImageHorizonLibrary
         retvals = []
         for direction in ['above', 'below', 'left', 'right']:
             fn = getattr(self.lib, fn_name % direction)
@@ -67,7 +67,7 @@ class TestRecognizeImages(TestCase):
         self._verify_calls_to_pyautogui(self.mock.click.mock_calls)
 
     def test_directional_copies(self):
-        copy = 'ImageHorizonLibrary.ImageHorizonLibrary.copy'
+        copy = 'src.ImageHorizonLibrary.ImageHorizonLibrary.copy'
         with patch(copy, return_value='Some Text'):
             ret = self._call_all_directional_functions('copy_from_the_%s_of')
         self._verify_calls_to_pyautogui(self.mock.click.mock_calls, clicks=3)
@@ -75,7 +75,7 @@ class TestRecognizeImages(TestCase):
             self.assertEqual(retval, 'Some Text')
 
     def test_does_exist(self):
-        from ImageHorizonLibrary import ImageNotFoundException
+        from src.ImageHorizonLibrary import ImageNotFoundException
 
         with patch(self._locate, return_value=(0, 0)):
             self.assertTrue(self.lib.does_exist('my_picture'))
@@ -87,7 +87,7 @@ class TestRecognizeImages(TestCase):
             self.assertEqual(len(run_on_failure.mock_calls), 0)
 
     def test_wait_for_happy_path(self):
-        from ImageHorizonLibrary import InvalidImageException
+        from src.ImageHorizonLibrary import InvalidImageException
         run_on_failure = MagicMock()
 
         with patch(self._locate, return_value=(0, 0)), \
@@ -96,7 +96,7 @@ class TestRecognizeImages(TestCase):
             self.assertEqual(len(run_on_failure.mock_calls), 0)
 
     def test_wait_for_negative_path(self):
-        from ImageHorizonLibrary import InvalidImageException
+        from src.ImageHorizonLibrary import InvalidImageException
         run_on_failure = MagicMock()
 
         with self.assertRaises(InvalidImageException), \
@@ -119,7 +119,7 @@ class TestRecognizeImages(TestCase):
         self.mock.reset_mock()
 
     def test_locate(self):
-        from ImageHorizonLibrary import InvalidImageException
+        from src.ImageHorizonLibrary import InvalidImageException
 
         for image_name in ('my_picture.png', 'my picture.png', 'MY PICTURE',
                            'mY_PiCtURe'):
@@ -154,7 +154,7 @@ class TestRecognizeImages(TestCase):
         self.mock.reset_mock()
 
     def test_locate_with_invalid_reference_folder(self):
-        from ImageHorizonLibrary import ReferenceFolderException
+        from src.ImageHorizonLibrary import ReferenceFolderException
 
         for invalid_folder in (None, 123, 'nonexistent', 'nönëxistänt'):
             self.lib.reference_folder = invalid_folder
@@ -167,7 +167,7 @@ class TestRecognizeImages(TestCase):
                 self.lib.locate('my_picture')
 
     def test_locate_with_invalid_image_name(self):
-        from ImageHorizonLibrary import InvalidImageException
+        from src.ImageHorizonLibrary import InvalidImageException
 
         for invalid_image_name in (None, 123, 1.2, True, self.lib.__class__()):
             with self.assertRaises(InvalidImageException):
