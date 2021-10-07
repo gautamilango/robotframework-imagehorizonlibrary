@@ -9,10 +9,17 @@ from robot.api import logger as LOGGER
 
 from ..errors import ImageNotFoundException, InvalidImageException
 from ..errors import ReferenceFolderException
-
+        
 class _RecognizeImages(object):
 
-    def __normalize(self, path):
+    def set_strategy(self, strategy='pyautogui'):
+        if strategy == 'pyautogui':
+            self._strategy = _StrategyPyautogui()
+        else: 
+            self._strategy = _StrategySkimage()
+
+
+    def _normalize(self, path):
         if (not self.reference_folder or
                 not isinstance(self.reference_folder, str) or
                 not isdir(self.reference_folder)):
@@ -143,70 +150,6 @@ class _RecognizeImages(object):
         yield None
         self.keyword_on_failure = keyword
 
-    def _locate(self, reference_image, log_it=True):
-        is_dir = False
-        try:
-            if isdir(self.__normalize(reference_image)):
-                is_dir = True
-        except InvalidImageException:
-            pass
-        is_file = False
-        try:
-            if isfile(self.__normalize(reference_image)):
-                is_file = True
-        except InvalidImageException:
-            pass
-        reference_image = self.__normalize(reference_image)
-
-        reference_images = []
-        if is_file:
-            reference_images = [reference_image]
-        elif is_dir:
-            for f in listdir(self.__normalize(reference_image)):
-                if not isfile(self.__normalize(path_join(reference_image, f))):
-                    raise InvalidImageException(
-                                            self.__normalize(reference_image))
-                reference_images.append(path_join(reference_image, f))
-
-        def try_locate(ref_image):
-            location = None
-            with self._suppress_keyword_on_failure():
-                try:
-                    if self.has_cv and self.confidence:
-                        location = ag.locateOnScreen(ref_image,
-                                                     confidence=self.confidence)
-                    else:
-                        if self.confidence:
-                            LOGGER.warn("Can't set confidence because you don't "
-                                        "have OpenCV (python-opencv) installed "
-                                        "or a confidence level was not given.")
-                        location = ag.locateOnScreen(ref_image)
-                except ImageNotFoundException as ex:
-                    LOGGER.info(ex)
-                    pass
-            return location
-
-        location = None
-        for ref_image in reference_images:
-            location = try_locate(ref_image)
-            if location != None:
-                break
-
-        if location is None:
-            if log_it:
-                LOGGER.info('Image "%s" was not found '
-                            'on screen.' % reference_image)
-            self._run_on_failure()
-            raise ImageNotFoundException(reference_image)
-        if log_it:
-            LOGGER.info('Image "%s" found at %r' % (reference_image, location))
-        center_point = ag.center(location)
-        x = center_point.x
-        y = center_point.y
-        if self.has_retina:
-            x = x / 2
-            y = y / 2
-        return (x, y)
 
     def does_exist(self, reference_image):
         '''Returns ``True`` if reference image was found on screen or
@@ -252,6 +195,142 @@ class _RecognizeImages(object):
                     pass
         if location is None:
             self._run_on_failure()
-            raise ImageNotFoundException(self.__normalize(reference_image))
+            raise ImageNotFoundException(self._normalize(reference_image))
         LOGGER.info('Image "%s" found at %r' % (reference_image, location))
         return location
+     
+class _StrategyPyautogui(_RecognizeImages):
+
+    def _locate(self, reference_image, log_it=True):
+        is_dir = False
+        try:
+            if isdir(self._normalize(reference_image)):
+                is_dir = True
+        except InvalidImageException:
+            pass
+        is_file = False
+        try:
+            if isfile(self._normalize(reference_image)):
+                is_file = True
+        except InvalidImageException:
+            pass
+        reference_image = self._normalize(reference_image)
+
+        reference_images = []
+        if is_file:
+            reference_images = [reference_image]
+        elif is_dir:
+            for f in listdir(self._normalize(reference_image)):
+                if not isfile(self._normalize(path_join(reference_image, f))):
+                    raise InvalidImageException(
+                                            self._normalize(reference_image))
+                reference_images.append(path_join(reference_image, f))
+
+        def try_locate(ref_image):
+            location = None
+            with self._suppress_keyword_on_failure():
+                try:
+                    if self.has_cv and self.confidence:
+                        location = ag.locateOnScreen(ref_image,
+                                                     confidence=self.confidence)
+                    else:
+                        if self.confidence:
+                            LOGGER.warn("Can't set confidence because you don't "
+                                        "have OpenCV (python-opencv) installed "
+                                        "or a confidence level was not given.")
+                        location = ag.locateOnScreen(ref_image)
+                except ImageNotFoundException as ex:
+                    LOGGER.info(ex)
+                    pass
+            return location
+
+        location = None
+        for ref_image in reference_images:
+            location = try_locate(ref_image)
+            if location != None:
+                break
+
+        if location is None:
+            if log_it:
+                LOGGER.info('Image "%s" was not found '
+                            'on screen.' % reference_image)
+            self._run_on_failure()
+            raise ImageNotFoundException(reference_image)
+        if log_it:
+            LOGGER.info('Image "%s" found at %r' % (reference_image, location))
+        center_point = ag.center(location)
+        x = center_point.x
+        y = center_point.y
+        if self.has_retina:
+            x = x / 2
+            y = y / 2
+        return (x, y)
+
+
+
+class _StrategySkimage(_RecognizeImages):
+
+    def _locate(self, reference_image, log_it=True):
+        is_dir = False
+        try:
+            if isdir(self._normalize(reference_image)):
+                is_dir = True
+        except InvalidImageException:
+            pass
+        is_file = False
+        try:
+            if isfile(self._normalize(reference_image)):
+                is_file = True
+        except InvalidImageException:
+            pass
+        reference_image = self._normalize(reference_image)
+
+        reference_images = []
+        if is_file:
+            reference_images = [reference_image]
+        elif is_dir:
+            for f in listdir(self._normalize(reference_image)):
+                if not isfile(self._normalize(path_join(reference_image, f))):
+                    raise InvalidImageException(
+                                            self._normalize(reference_image))
+                reference_images.append(path_join(reference_image, f))
+
+        def try_locate(ref_image):
+            location = None
+            with self._suppress_keyword_on_failure():
+                try:
+                    if self.has_cv and self.confidence:
+                        location = ag.locateOnScreen(ref_image,
+                                                     confidence=self.confidence)
+                    else:
+                        if self.confidence:
+                            LOGGER.warn("Can't set confidence because you don't "
+                                        "have OpenCV (python-opencv) installed "
+                                        "or a confidence level was not given.")
+                        location = ag.locateOnScreen(ref_image)
+                except ImageNotFoundException as ex:
+                    LOGGER.info(ex)
+                    pass
+            return location
+
+        location = None
+        for ref_image in reference_images:
+            location = try_locate(ref_image)
+            if location != None:
+                break
+
+        if location is None:
+            if log_it:
+                LOGGER.info('Image "%s" was not found '
+                            'on screen.' % reference_image)
+            self._run_on_failure()
+            raise ImageNotFoundException(reference_image)
+        if log_it:
+            LOGGER.info('Image "%s" found at %r' % (reference_image, location))
+        center_point = ag.center(location)
+        x = center_point.x
+        y = center_point.y
+        if self.has_retina:
+            x = x / 2
+            y = y / 2
+        return (x, y)

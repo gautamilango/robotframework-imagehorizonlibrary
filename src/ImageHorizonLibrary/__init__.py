@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
 from contextlib import contextmanager
+import inspect
 
 from .errors import *    # import errors before checking dependencies!
 
 try:
     import pyautogui as ag
 except ImportError:
-    raise ImageHorizonLibraryError('There is something wrong pyautogui or '
+    raise ImageHorizonLibraryError('There is something wrong with pyautogui or '
                                    'it is not installed.')
 
 try:
@@ -25,6 +26,12 @@ except ImportError:
                                    'which is not a supported platform. Please '
                                    'use Python and verify that Tkinter works.')
 
+try:
+    import skimage as sk
+except ImportError: 
+    raise ImageHorizonLibraryError('There is either something wrong with skimage '
+                                    '(scikit-image) or it is not installed.')
+
 from . import utils
 from .interaction import *
 from .recognition import *
@@ -33,91 +40,26 @@ from .version import VERSION
 __version__ = VERSION
 
 
-class ImageHorizonLibrary(_Keyboard,
+
+
+
+class ImageHorizonLibrary(
+                          _Keyboard,
                           _Mouse,
                           _OperatingSystem,
                           _RecognizeImages,
-                          _Screenshot):
-    '''A cross-platform Robot Framework library for GUI automation.
-
-    ImageHorizonLibrary provides keyboard and mouse actions as well as
-    facilities to recognize images on screen. It can also take screenshots in
-    case of failure or otherwise.
-
-
-    This library is built on top of
-    [https://pyautogui.readthedocs.org|pyautogui].
-
-    == Confidence Level ==
-    By default, image recognition searches images with pixel-perfect matching.
-    This is in many scenarios too precise, as changing desktop background,
-    transpareny in the reference images, slightly changing resolutions, and
-    myriad of factors might throw the algorithm off. In these cases, it is
-    advised to adjust the precision manually.
-
-    This ability to adjust can be enabled by installing
-    [https://pypi.org/project/opencv-python|opencv-python] Python package
-    separately:
-
-    | $ pip install opencv-python
-
-    After installation, the library will use OpenCV, which enables setting the
-    precision during `library importing` and during the test case  with keyword
-    `Set Confidence`.
-
-
-    = Reference image names =
-    ``reference_image`` parameter can be either a single file, or a folder.
-    If ``reference_image`` is a folder, image recognition is tried separately
-    for each image in that folder, in alphabetical order until a match is found.
-
-    For ease of use, reference image names are automatically normalized
-    according to the following rules:
-
-    - The name is lower cased: ``MYPICTURE`` and ``mYPiCtUrE`` become
-      ``mypicture``
-
-    - All spaces are converted to underscore ``_``: ``my picture`` becomes
-      ``my_picture``
-
-    - If the image name does not end in ``.png``, it will be added:
-      ``mypicture`` becomes ``mypicture.png``
-
-    - Path to _reference folder_ is prepended. This option must be given when
-      `importing` the library.
-
-    Using good names for reference images is evident from easy-to-read test
-    data:
-
-    | `Import Library` | ImageHorizonLibrary                   | reference_folder=images |                                                            |
-    | `Click Image`    | popup Window title                    |                         | # Path is images/popup_window_title.png                    |
-    | `Click Image`    | button Login Without User Credentials |                         | # Path is images/button_login_without_user_credentials.png |
-
-    = Performance =
-
-    Locating images on screen, especially if screen resolution is large and
-    reference image is also large, might take considerable time. It is
-    therefore advisable to save the returned coordinates if you are
-    manipulating the same context many times in the row:
-
-    | `Wait For`                   | label Name |     |
-    | `Click To The Left Of Image` | label Name | 200 |
-
-    In the above example, same image is located twice. Below is an example how
-    we can leverage the returned location:
-
-    | ${location}=           | `Wait For`  | label Name |
-    | `Click To The Left Of` | ${location} | 200        |
-    '''
+                         _Screenshot
+                        ):
+    '''A cross-platform Robot Framework library for GUI automation.    '''
 
     ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
     ROBOT_LIBRARY_VERSION = VERSION
 
     def __init__(self, reference_folder=None, screenshot_folder=None,
                  keyword_on_failure='ImageHorizonLibrary.Take A Screenshot',
-                 confidence=None):
+                 confidence=None, strategy='pyautogui'):
         '''ImageHorizonLibrary can be imported with several options.
-
+        
         ``reference_folder`` is path to the folder where all reference images
         are stored. It must be a _valid absolute path_. As the library
         is suite-specific (ie. new instance is created for every suite),
@@ -130,13 +72,14 @@ class ImageHorizonLibrary(_Keyboard,
         ``keyword_on_failure`` is the keyword to be run, when location-related
         keywords fail. If you wish to not take screenshots, use for example
         `BuiltIn.No Operation`. Keyword must however be a valid keyword.
-
-        ``confidence`` provides a tolerance for the ``reference_image``.
-                       It can be used if python-opencv is installed and
-                       is given as number between 0 and 1. Not used
-                       by default.
+        
+        ``strategy`` sets the way how images are detected on the screen. 
+        - `pyautogui` - (Default)
+        - `skimage` - Advanced image recognition options with canny edge detection
         '''
-
+        self.set_strategy(strategy)
+                
+        # _RecognizeImages.set_strategy(self, strategy)
         self.reference_folder = reference_folder
         self.screenshot_folder = screenshot_folder
         self.keyword_on_failure = keyword_on_failure
@@ -148,6 +91,32 @@ class ImageHorizonLibrary(_Keyboard,
         self.has_retina = utils.has_retina()
         self.has_cv = utils.has_cv()
         self.confidence = confidence
+
+
+    def set_strategy(self, strategy='pyautogui'):
+        '''Sets the way how images are detected on the screen. 
+        
+        `strategy` is either one of the values: 
+        - `pyautogui` - (Default)
+        - `skimage` - Advanced image recognition options with canny edge detection
+        '''
+        if strategy == 'pyautogui':
+            strategy_cls = _StrategyPyautogui
+        elif strategy == 'skimage': 
+            strategy_cls = _StrategySkimage
+        else: 
+            raise StrategyException('Invalid strategy: "%s"' % strategy)
+            
+        # Prepare bases
+        child_bases = inspect.getmro(self.__class__)
+        parent_bases = inspect.getmro(strategy_cls)
+        bases = tuple([item for item in parent_bases if item not in child_bases]) + child_bases
+
+        # Construct the new return type
+        new_class = type(self.__class__.__name__, bases, self.__dict__.copy())
+        self.__class__ = new_class
+        
+
 
     def _get_location(self, direction, location, offset):
         x, y = location
