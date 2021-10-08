@@ -57,7 +57,8 @@ class ImageHorizonLibrary(
 
     def __init__(self, reference_folder=None, screenshot_folder=None,
                  keyword_on_failure='ImageHorizonLibrary.Take A Screenshot',
-                 confidence=None, strategy='pyautogui'):
+                 confidence=None, strategy='pyautogui', 
+                 edge_sigma=2.0, edge_low_threshold=0.1, edge_high_threshold=0.3):
         '''ImageHorizonLibrary can be imported with several options.
         
         ``reference_folder`` is path to the folder where all reference images
@@ -76,8 +77,10 @@ class ImageHorizonLibrary(
         ``strategy`` sets the way how images are detected on the screen. 
         - `pyautogui` - (Default)
         - `skimage` - Advanced image recognition options with canny edge detection
+          - `edge_sigma` - Gaussian blur intensity
+          - `edge_low_threshold` - low pixel gradient threshold
+          - `edge_high_threshold` - high pixel gradient threshold
         '''
-        self.set_strategy(strategy)
                 
         # _RecognizeImages.set_strategy(self, strategy)
         self.reference_folder = reference_folder
@@ -90,7 +93,12 @@ class ImageHorizonLibrary(
         self.is_linux = utils.is_linux()
         self.has_retina = utils.has_retina()
         self.has_cv = utils.has_cv()
+        self.has_skimage = utils.has_skimage()
         self.confidence = confidence
+        self.set_strategy(strategy)
+        self.edge_sigma = edge_sigma
+        self.edge_low_threshold = edge_low_threshold
+        self.edge_high_threshold = edge_high_threshold
 
 
     def set_strategy(self, strategy='pyautogui'):

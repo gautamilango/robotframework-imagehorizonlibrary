@@ -7,6 +7,12 @@ from contextlib import contextmanager
 import pyautogui as ag
 from robot.api import logger as LOGGER
 
+import skimage
+import skimage.feature
+import skimage.viewer
+from skimage.feature import match_template
+from skimage.metrics import structural_similarity as ssim
+
 from ..errors import ImageNotFoundException, InvalidImageException
 from ..errors import ReferenceFolderException
         
