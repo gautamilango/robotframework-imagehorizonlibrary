@@ -269,7 +269,7 @@ class _StrategyPyautogui(_RecognizeImages):
 
 
 class _StrategySkimage(_RecognizeImages):
-    _SKIMAGE_DEFAULT_CONFIDENCE = 0.9999999999999
+    _SKIMAGE_DEFAULT_CONFIDENCE = 0.99
 
     def _try_locate(self, ref_image):
         location = None
@@ -277,8 +277,7 @@ class _StrategySkimage(_RecognizeImages):
             what = skimage.io.imread(ref_image, as_gray=True)
             where = rgb2gray(np.array(ag.screenshot()))
             what_edge = self.detect_edges(what)
-            what_where = self.detect_edges(where)
-            #peakmap = match_template(what_where, what_edge, pad_input=True)
+            what_where = self.detect_edges(where)            
             peakmap = match_template(what_where, what_edge)
             # Many skimage tutorials suggest to use peak_local_max to filter 
             # the list of peaks further. This is not needed, as we only need 
@@ -288,7 +287,7 @@ class _StrategySkimage(_RecognizeImages):
             ij = np.unravel_index(np.argmax(peakmap), peakmap.shape)
             # Extract coordinates of the highest peak
             x, y = ij[::-1]
-            # Peak level
+            # higest peak level
             peak = peakmap[y][x]
             confidence = self.confidence or self._SKIMAGE_DEFAULT_CONFIDENCE
             if peak > confidence:      

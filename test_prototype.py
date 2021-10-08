@@ -72,7 +72,7 @@ def plot_result(what, where, peakmap, title, x_peak, y_peak):
     plt.show()
 
 
-def compare(what_name, sigma=2.0, low=0.1, high=0.3, confidence=0.9999999999999):
+def compare(what_name, sigma=2.0, low=0.1, high=0.3, confidence=0.99):
     what = skimage.io.imread('..\\..\\images\\' + what_name, as_gray=True)
     where = rgb2gray(np.array(ag.screenshot()))
     what_edge = detect_edges(what, sigma, low, high)
@@ -91,7 +91,7 @@ def compare(what_name, sigma=2.0, low=0.1, high=0.3, confidence=0.9999999999999)
 #image = skimage.io.imread('..\\..\\images\\screen.png', as_gray=True)
 
 
-compare('3.png')
+compare('10.png')
 #cProfile.run('compare()')
 
 # confidence:            0.9999999999999
