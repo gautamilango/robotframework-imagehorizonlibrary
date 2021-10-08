@@ -13,10 +13,7 @@ screen = data.coins()
 coin = screen[170:220, 75:130]
 
 
-screen = rgb2gray(np.array(ag.screenshot()))
-#image = skimage.io.imread('..\\..\\images\\screen.png', as_gray=True)
 
-coin = skimage.io.imread('..\\..\\images\\win.png', as_gray=True)
 #coin = skimage.io.imread('..\\..\\images\\text.png', as_gray=True)
 #coin = skimage.io.imread('..\\..\\images\\win_changed.png', as_gray=True)
 
@@ -43,13 +40,6 @@ def detect_edges(img, sigma, low, high):
         high_threshold=high,
     )
     return edge_img
-    
-    # https://www.pyimagesearch.com/2014/09/15/python-compare-two-images/
-    # Similarity of edge images
-    #similarity = ssim(refEdges, compEdges)
-    # Similarity of original images
-    similarity = ssim(refImage, compImage)
-    return similarity
 
 
 def plot_result(what, where, peakmap, title, x_peak, y_peak):    
@@ -82,19 +72,26 @@ def plot_result(what, where, peakmap, title, x_peak, y_peak):
     plt.show()
 
 
-def compare(what, where, sigma=2.0, low=0.1, high=0.3, confidence=0.9999999999999):
-    
-    peakmap = match_template(where, what, pad_input=True)
+def compare(what_name, sigma=2.0, low=0.1, high=0.3, confidence=0.9999999999999):
+    what = skimage.io.imread('..\\..\\images\\' + what_name, as_gray=True)
+    where = rgb2gray(np.array(ag.screenshot()))
+    what_edge = detect_edges(what, sigma, low, high)
+    what_where = detect_edges(where, sigma, low, high)
+    peakmap = match_template(what_where, what_edge, pad_input=True)
     ij = np.unravel_index(np.argmax(peakmap), peakmap.shape)
     x, y = ij[::-1]
 
     peak = peakmap[y][x]
     matched = peak > confidence
     title = f"Match = {str(matched)} (peak at {peak} > {confidence})"
-    plot_result(what, where, peakmap, title, x,y)
+#    plot_result(what, where, peakmap, title, x,y)
+    plot_result(what_edge, what_where, peakmap, title, x,y)
     
 
-compare(coin, screen)
+#image = skimage.io.imread('..\\..\\images\\screen.png', as_gray=True)
+
+
+compare('3.png')
 #cProfile.run('compare()')
 
 # confidence:            0.9999999999999

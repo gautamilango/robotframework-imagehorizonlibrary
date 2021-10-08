@@ -11,7 +11,10 @@ import skimage
 import skimage.feature
 import skimage.viewer
 from skimage.feature import match_template
-from skimage.metrics import structural_similarity as ssim
+from skimage.color import rgb2gray
+
+import numpy as np
+
 
 from ..errors import ImageNotFoundException, InvalidImageException
 from ..errors import ReferenceFolderException
@@ -275,6 +278,25 @@ class _StrategyPyautogui(_RecognizeImages):
 
 
 class _StrategySkimage(_RecognizeImages):
+    _SKIMAGE_CONFIDENCE = 0.9999999999999
+
+    def _detect_edges(self, img, sigma, low, high):
+        edge_img = skimage.feature.canny(
+            image=img,
+            sigma=sigma,
+            low_threshold=low,
+            high_threshold=high,
+        )
+        return edge_img
+
+    def detect_edges(self, img):
+        '''Apply edge detection on a given image'''
+        return self._detect_edges(
+            img,
+            self.edge_sigma,
+            self.edge_low_threshold,
+            self.edge_low_threshold
+            )
 
     def _locate(self, reference_image, log_it=True):
         is_dir = False
@@ -303,20 +325,27 @@ class _StrategySkimage(_RecognizeImages):
 
         def try_locate(ref_image):
             location = None
-            with self._suppress_keyword_on_failure():
-                try:
-                    if self.has_cv and self.confidence:
-                        location = ag.locateOnScreen(ref_image,
-                                                     confidence=self.confidence)
-                    else:
-                        if self.confidence:
-                            LOGGER.warn("Can't set confidence because you don't "
-                                        "have OpenCV (python-opencv) installed "
-                                        "or a confidence level was not given.")
-                        location = ag.locateOnScreen(ref_image)
-                except ImageNotFoundException as ex:
-                    LOGGER.info(ex)
-                    pass
+            with self._suppress_keyword_on_failure():            
+                what = skimage.io.imread(ref_image, as_gray=True)
+                where = rgb2gray(np.array(ag.screenshot()))
+                what_edge = self.detect_edges(what)
+                what_where = self.detect_edges(where)
+                #peakmap = match_template(what_where, what_edge, pad_input=True)
+                peakmap = match_template(what_where, what_edge)
+                # Many skimage tutorials suggest to use peak_local_max to filter 
+                # the list of peaks further. This is not needed, as we only need 
+                # the best and one match which is the index with the highest peak
+                # value. 
+                # Transform index to coordinates of highest peak
+                ij = np.unravel_index(np.argmax(peakmap), peakmap.shape)
+                # Extract coordinates of the highest peak
+                x, y = ij[::-1]
+                # Peak level
+                peak = peakmap[y][x]
+                confidence = self.confidence or self._SKIMAGE_CONFIDENCE
+                if peak > confidence:      
+                    hwhat, wwhat = what.shape          
+                    location = (x, y, wwhat, hwhat)
             return location
 
         location = None
