@@ -21,13 +21,6 @@ from ..errors import ReferenceFolderException
         
 class _RecognizeImages(object):
 
-    def set_strategy(self, strategy='pyautogui'):
-        if strategy == 'pyautogui':
-            self._strategy = _StrategyPyautogui()
-        else: 
-            self._strategy = _StrategySkimage()
-
-
     def _normalize(self, path):
         if (not self.reference_folder or
                 not isinstance(self.reference_folder, str) or

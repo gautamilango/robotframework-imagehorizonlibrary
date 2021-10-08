@@ -95,34 +95,45 @@ class ImageHorizonLibrary(
         self.has_cv = utils.has_cv()
         self.has_skimage = utils.has_skimage()
         self.confidence = confidence
+        self._class_bases = inspect.getmro(self.__class__)
         self.set_strategy(strategy)
         self.edge_sigma = edge_sigma
         self.edge_low_threshold = edge_low_threshold
         self.edge_high_threshold = edge_high_threshold
 
 
-    def set_strategy(self, strategy='pyautogui'):
+
+    def set_strategy(self, strategy, edge_sigma=2.0, edge_low_threshold=0.1, edge_high_threshold=0.3):
         '''Sets the way how images are detected on the screen. 
         
         `strategy` is either one of the values: 
         - `pyautogui` - (Default)
         - `skimage` - Advanced image recognition options with canny edge detection
         '''
+        self.strategy = strategy
         if strategy == 'pyautogui':
             strategy_cls = _StrategyPyautogui
         elif strategy == 'skimage': 
             strategy_cls = _StrategySkimage
+            self.edge_sigma = edge_sigma
+            self.edge_low_threshold = edge_low_threshold
+            self.edge_high_threshold = edge_high_threshold
         else: 
             raise StrategyException('Invalid strategy: "%s"' % strategy)
             
-        # Prepare bases
-        child_bases = inspect.getmro(self.__class__)
-        parent_bases = inspect.getmro(strategy_cls)
-        bases = tuple([item for item in parent_bases if item not in child_bases]) + child_bases
-
-        # Construct the new return type
-        new_class = type(self.__class__.__name__, bases, self.__dict__.copy())
+        # The challenge here is to replace a superclass of an already existing object.
+        # Base classes of the new strategy superclass (+ its superclasses in turn)
+        strategy_bases = inspect.getmro(strategy_cls)
+        # The base classes of self (saved once during init) get expanded with the strategy's base classes
+        new_bases = tuple([item for item in strategy_bases if item not in self._class_bases]) + self._class_bases
+        # Now construct a new class: keep its name, use the new bases and duplicate its namespace
+        new_class = type(self.__class__.__name__, new_bases, self.__dict__.copy())
+        # Give self a new identity
         self.__class__ = new_class
+        # Effects when switching to $strategy: 
+        # - edge_* params change (only for skimage and only if set)
+        # - self.strategd == '$strategy'
+        # - self._locate gets a bound method of _Strategy$strategy._locate 
         
 
 
