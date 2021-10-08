@@ -152,6 +152,52 @@ class _RecognizeImages(object):
         yield None
         self.keyword_on_failure = keyword
 
+    def _locate(self, reference_image, log_it=True):
+        is_dir = False
+        try:
+            if isdir(self._normalize(reference_image)):
+                is_dir = True
+        except InvalidImageException:
+            pass
+        is_file = False
+        try:
+            if isfile(self._normalize(reference_image)):
+                is_file = True
+        except InvalidImageException:
+            pass
+        reference_image = self._normalize(reference_image)
+
+        reference_images = []
+        if is_file:
+            reference_images = [reference_image]
+        elif is_dir:
+            for f in listdir(self._normalize(reference_image)):
+                if not isfile(self._normalize(path_join(reference_image, f))):
+                    raise InvalidImageException(
+                                            self._normalize(reference_image))
+                reference_images.append(path_join(reference_image, f))
+
+        location = None
+        for ref_image in reference_images:
+            location = self._try_locate(ref_image)
+            if location != None:
+                break
+
+        if location is None:
+            if log_it:
+                LOGGER.info('Image "%s" was not found '
+                            'on screen. (strategy: %s)' % (reference_image, self.strategy))
+            self._run_on_failure()
+            raise ImageNotFoundException(reference_image)
+        if log_it:
+            LOGGER.info('Image "%s" found at %r (strategy: %s)' % (reference_image, location, self.strategy))
+        center_point = ag.center(location)
+        x = center_point.x
+        y = center_point.y
+        if self.has_retina:
+            x = x / 2
+            y = y / 2
+        return (x, y)
 
     def does_exist(self, reference_image):
         '''Returns ``True`` if reference image was found on screen or
@@ -201,77 +247,54 @@ class _RecognizeImages(object):
         LOGGER.info('Image "%s" found at %r' % (reference_image, location))
         return location
      
-class _StrategyPyautogui(_RecognizeImages):
-
-    def _locate(self, reference_image, log_it=True):
-        is_dir = False
-        try:
-            if isdir(self._normalize(reference_image)):
-                is_dir = True
-        except InvalidImageException:
-            pass
-        is_file = False
-        try:
-            if isfile(self._normalize(reference_image)):
-                is_file = True
-        except InvalidImageException:
-            pass
-        reference_image = self._normalize(reference_image)
-
-        reference_images = []
-        if is_file:
-            reference_images = [reference_image]
-        elif is_dir:
-            for f in listdir(self._normalize(reference_image)):
-                if not isfile(self._normalize(path_join(reference_image, f))):
-                    raise InvalidImageException(
-                                            self._normalize(reference_image))
-                reference_images.append(path_join(reference_image, f))
-
-        def try_locate(ref_image):
-            location = None
-            with self._suppress_keyword_on_failure():
-                try:
-                    if self.has_cv and self.confidence:
-                        location = ag.locateOnScreen(ref_image,
-                                                     confidence=self.confidence)
-                    else:
-                        if self.confidence:
-                            LOGGER.warn("Can't set confidence because you don't "
-                                        "have OpenCV (python-opencv) installed "
-                                        "or a confidence level was not given.")
-                        location = ag.locateOnScreen(ref_image)
-                except ImageNotFoundException as ex:
-                    LOGGER.info(ex)
-                    pass
-            return location
-
+class _StrategyPyautogui(_RecognizeImages):  
+    def _try_locate(self, ref_image):
         location = None
-        for ref_image in reference_images:
-            location = try_locate(ref_image)
-            if location != None:
-                break
-
-        if location is None:
-            if log_it:
-                LOGGER.info('Image "%s" was not found '
-                            'on screen.' % reference_image)
-            self._run_on_failure()
-            raise ImageNotFoundException(reference_image)
-        if log_it:
-            LOGGER.info('Image "%s" found at %r' % (reference_image, location))
-        center_point = ag.center(location)
-        x = center_point.x
-        y = center_point.y
-        if self.has_retina:
-            x = x / 2
-            y = y / 2
-        return (x, y)
+        with self._suppress_keyword_on_failure():
+            try:
+                if self.has_cv and self.confidence:
+                    location = ag.locateOnScreen(ref_image,
+                                                    confidence=self.confidence)
+                else:
+                    if self.confidence:
+                        LOGGER.warn("Can't set confidence because you don't "
+                                    "have OpenCV (python-opencv) installed "
+                                    "or a confidence level was not given.")
+                    location = ag.locateOnScreen(ref_image)
+            except ImageNotFoundException as ex:
+                LOGGER.info(ex)
+                pass
+        return location
 
 
 
 class _StrategySkimage(_RecognizeImages):
-    _SKIMAGE_CONFIDENCE = 0.9999999999999
+    _SKIMAGE_DEFAULT_CONFIDENCE = 0.9999999999999
+
+    def _try_locate(self, ref_image):
+        location = None
+        with self._suppress_keyword_on_failure():            
+            what = skimage.io.imread(ref_image, as_gray=True)
+            where = rgb2gray(np.array(ag.screenshot()))
+            what_edge = self.detect_edges(what)
+            what_where = self.detect_edges(where)
+            #peakmap = match_template(what_where, what_edge, pad_input=True)
+            peakmap = match_template(what_where, what_edge)
+            # Many skimage tutorials suggest to use peak_local_max to filter 
+            # the list of peaks further. This is not needed, as we only need 
+            # the best and one match which is the index with the highest peak
+            # value. 
+            # Transform index to coordinates of highest peak
+            ij = np.unravel_index(np.argmax(peakmap), peakmap.shape)
+            # Extract coordinates of the highest peak
+            x, y = ij[::-1]
+            # Peak level
+            peak = peakmap[y][x]
+            confidence = self.confidence or self._SKIMAGE_DEFAULT_CONFIDENCE
+            if peak > confidence:      
+                hwhat, wwhat = what.shape          
+                location = (x, y, wwhat, hwhat)
+        return location
 
     def _detect_edges(self, img, sigma, low, high):
         edge_img = skimage.feature.canny(
@@ -291,74 +314,3 @@ class _StrategySkimage(_RecognizeImages):
             self.edge_low_threshold
             )
 
-    def _locate(self, reference_image, log_it=True):
-        is_dir = False
-        try:
-            if isdir(self._normalize(reference_image)):
-                is_dir = True
-        except InvalidImageException:
-            pass
-        is_file = False
-        try:
-            if isfile(self._normalize(reference_image)):
-                is_file = True
-        except InvalidImageException:
-            pass
-        reference_image = self._normalize(reference_image)
-
-        reference_images = []
-        if is_file:
-            reference_images = [reference_image]
-        elif is_dir:
-            for f in listdir(self._normalize(reference_image)):
-                if not isfile(self._normalize(path_join(reference_image, f))):
-                    raise InvalidImageException(
-                                            self._normalize(reference_image))
-                reference_images.append(path_join(reference_image, f))
-
-        def try_locate(ref_image):
-            location = None
-            with self._suppress_keyword_on_failure():            
-                what = skimage.io.imread(ref_image, as_gray=True)
-                where = rgb2gray(np.array(ag.screenshot()))
-                what_edge = self.detect_edges(what)
-                what_where = self.detect_edges(where)
-                #peakmap = match_template(what_where, what_edge, pad_input=True)
-                peakmap = match_template(what_where, what_edge)
-                # Many skimage tutorials suggest to use peak_local_max to filter 
-                # the list of peaks further. This is not needed, as we only need 
-                # the best and one match which is the index with the highest peak
-                # value. 
-                # Transform index to coordinates of highest peak
-                ij = np.unravel_index(np.argmax(peakmap), peakmap.shape)
-                # Extract coordinates of the highest peak
-                x, y = ij[::-1]
-                # Peak level
-                peak = peakmap[y][x]
-                confidence = self.confidence or self._SKIMAGE_CONFIDENCE
-                if peak > confidence:      
-                    hwhat, wwhat = what.shape          
-                    location = (x, y, wwhat, hwhat)
-            return location
-
-        location = None
-        for ref_image in reference_images:
-            location = try_locate(ref_image)
-            if location != None:
-                break
-
-        if location is None:
-            if log_it:
-                LOGGER.info('Image "%s" was not found '
-                            'on screen.' % reference_image)
-            self._run_on_failure()
-            raise ImageNotFoundException(reference_image)
-        if log_it:
-            LOGGER.info('Image "%s" found at %r' % (reference_image, location))
-        center_point = ag.center(location)
-        x = center_point.x
-        y = center_point.y
-        if self.has_retina:
-            x = x / 2
-            y = y / 2
-        return (x, y)

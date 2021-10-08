@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# from tkinter import Image
 from src.ImageHorizonLibrary import ImageHorizonLibrary
 
 #ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='skimage', edge_sigma=2, edge_low_threshold=1, edge_high_threshold=2)
 ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='pyautogui')
-ih.set_strategy('skimage', edge_sigma=4, edge_low_threshold=0.2, edge_high_threshold=0.4)
-ih.set_strategy('pyautogui')
-ih.set_strategy('skimage', edge_sigma=2, edge_low_threshold=0.1, edge_high_threshold=0.3)
-ih.set_strategy('pyautogui')
-
-
 foo = ih.click_image("win")
+ih.set_strategy('skimage', edge_sigma=2, edge_low_threshold=0.1, edge_high_threshold=0.3)
+foo = ih.click_image("win")
+# ih.set_strategy('skimage', edge_sigma=4, edge_low_threshold=0.2, edge_high_threshold=0.4)
+# ih.set_strategy('pyautogui')
+# ih.set_strategy('pyautogui')
+
+
 #ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='pyautogui')
 # ih.wait_for(reference_image='foo')
 # ih.set
