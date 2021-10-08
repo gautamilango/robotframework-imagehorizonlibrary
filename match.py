@@ -9,11 +9,11 @@ from skimage.color import rgb2gray
 import pyautogui as ag
 import sys
 
-image = data.coins()
-coin = image[170:220, 75:130]
+screen = data.coins()
+coin = screen[170:220, 75:130]
 
 
-image = rgb2gray(np.array(ag.screenshot()))
+screen = rgb2gray(np.array(ag.screenshot()))
 #image = skimage.io.imread('..\\..\\images\\screen.png', as_gray=True)
 
 coin = skimage.io.imread('..\\..\\images\\win.png', as_gray=True)
@@ -35,47 +35,66 @@ coin = skimage.io.imread('..\\..\\images\\win.png', as_gray=True)
 # ---
 
 
-def compare():
-    confidence = 0.9999999999999
-    #confidence = 0.9
-
-    result = match_template(image, coin, pad_input=True)
-    ij = np.unravel_index(np.argmax(result), result.shape)
-    x, y = ij[::-1]
+def detect_edges(img, sigma, low, high):
+    edge_img = skimage.feature.canny(
+        image=img,
+        sigma=sigma,
+        low_threshold=low,
+        high_threshold=high,
+    )
+    return edge_img
     
+    # https://www.pyimagesearch.com/2014/09/15/python-compare-two-images/
+    # Similarity of edge images
+    #similarity = ssim(refEdges, compEdges)
+    # Similarity of original images
+    similarity = ssim(refImage, compImage)
+    return similarity
+
+
+def plot_result(what, where, peakmap, title, x_peak, y_peak):    
     fig = plt.figure(figsize=(8, 3))
     ax1 = plt.subplot(1, 3, 1)
     ax2 = plt.subplot(1, 3, 2)
     ax3 = plt.subplot(1, 3, 3, sharex=ax2, sharey=ax2)
 
-    ax1.imshow(coin, cmap=plt.cm.gray)
+    ax1.imshow(what, cmap=plt.cm.gray)
     #ax1.set_axis_off()
     ax1.set_title('what')
 
-    ax2.imshow(image, cmap=plt.cm.gray)
+    ax2.imshow(where, cmap=plt.cm.gray)
     #ax2.set_axis_off()
     ax2.set_title('where')
     # highlight matched region
-    hcoin, wcoin = coin.shape
-    rect = plt.Rectangle((x-int(wcoin/2), y-int(hcoin/2)), wcoin, hcoin, edgecolor='r', facecolor='none')
+    hwhat, wwhat = what.shape
+    rect = plt.Rectangle((x_peak-int(wwhat/2), y_peak-int(hwhat/2)), wwhat, hwhat, edgecolor='r', facecolor='none')
     ax2.add_patch(rect)
 
-    ax3.imshow(result)
+    ax3.imshow(peakmap)
     #ax3.set_axis_off()
-    ax3.set_title('peak map')
+    ax3.set_title('peakmap')
     # highlight matched region
     ax3.autoscale(False)
-    ax3.plot(x, y, 'o', markeredgecolor='r', markerfacecolor='none', markersize=10)
+    ax3.plot(x_peak, y_peak, 'o', markeredgecolor='r', markerfacecolor='none', markersize=10)
 
-    peak = result[y][x]
-    matched = peak > confidence
-    suptitle = f"Match = {str(matched)} (peak at {peak} > {confidence})"
-    fig.suptitle(suptitle, fontsize=14, fontweight='bold')
 
+    fig.suptitle(title, fontsize=14, fontweight='bold')
     plt.show()
-    pass
 
-compare()
+
+def compare(what, where, sigma=2.0, low=0.1, high=0.3, confidence=0.9999999999999):
+    
+    peakmap = match_template(where, what, pad_input=True)
+    ij = np.unravel_index(np.argmax(peakmap), peakmap.shape)
+    x, y = ij[::-1]
+
+    peak = peakmap[y][x]
+    matched = peak > confidence
+    title = f"Match = {str(matched)} (peak at {peak} > {confidence})"
+    plot_result(what, where, peakmap, title, x,y)
+    
+
+compare(coin, screen)
 #cProfile.run('compare()')
 
 # confidence:            0.9999999999999
