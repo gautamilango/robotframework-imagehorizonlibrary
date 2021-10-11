@@ -11,6 +11,7 @@ import skimage
 import skimage.feature
 import skimage.viewer
 from skimage.feature import match_template
+from skimage.feature import peak_local_max
 from skimage.color import rgb2gray
 
 import numpy as np
@@ -152,7 +153,10 @@ class _RecognizeImages(object):
         yield None
         self.keyword_on_failure = keyword
 
-    def _locate(self, reference_image, log_it=True):
+    def _get_reference_images(self, reference_image):
+        '''Return an absolute path for the given reference imge. 
+        Return as a list of those if reference_image is a folder.
+        '''
         is_dir = False
         try:
             if isdir(self._normalize(reference_image)):
@@ -176,6 +180,10 @@ class _RecognizeImages(object):
                     raise InvalidImageException(
                                             self._normalize(reference_image))
                 reference_images.append(path_join(reference_image, f))
+        return reference_images
+
+    def _locate(self, reference_image, log_it=True):
+        reference_images = self._get_reference_images(reference_image)
 
         location = None
         for ref_image in reference_images:
@@ -198,6 +206,16 @@ class _RecognizeImages(object):
             x = x / 2
             y = y / 2
         return (x, y)
+
+    def _locate_all(self, reference_image):   
+        '''Tries to locate all occurrences of the reference image on the screen.   
+        Returns a list of location tuples (finds 0..n)''' 
+        reference_images = self._get_reference_images(reference_image)   
+        if len(reference_images) > 1: 
+            raise InvalidImageException(
+                f'Locating ALL occurences of MANY files ({", ".join(reference_images)}) is not supported.')        
+        locations = self._try_locate(reference_images[0], locate_all=True)
+        return locations
 
     def does_exist(self, reference_image):
         '''Returns ``True`` if reference image was found on screen or
@@ -246,54 +264,99 @@ class _RecognizeImages(object):
             raise ImageNotFoundException(self._normalize(reference_image))
         LOGGER.info('Image "%s" found at %r' % (reference_image, location))
         return location
+    
      
 class _StrategyPyautogui(_RecognizeImages):  
-    def _try_locate(self, ref_image):
+    
+    def _try_locate(self, ref_image, locate_all=False):
+        '''Tries to locate the reference image on the screen. 
+        Return values: 
+        - locate_all=False: None or 1 location tuple (finds max 1)
+        - locate_all=True:  None or list of location tuples (finds 0..n)
+          (GUI Debugger mode)'''        
         location = None
+        if locate_all: 
+            locate_func = ag.locateAllOnScreen
+        else:
+            locate_func = ag.locateOnScreen
+
         with self._suppress_keyword_on_failure():
             try:
-                if self.has_cv and self.confidence:
-                    location = ag.locateOnScreen(ref_image,
+                if self.has_cv and self.confidence:                    
+                    location_res = locate_func(ref_image,
                                                     confidence=self.confidence)
                 else:
                     if self.confidence:
                         LOGGER.warn("Can't set confidence because you don't "
                                     "have OpenCV (python-opencv) installed "
                                     "or a confidence level was not given.")
-                    location = ag.locateOnScreen(ref_image)
+                    location_res = locate_func(ref_image)
             except ImageNotFoundException as ex:
                 LOGGER.info(ex)
                 pass
+        if locate_all: 
+            # convert the generator fo Box objects to a list of tuples
+            location = [tuple(box) for box in location_res]
+        else: 
+            # Single Box
+            location = location_res
         return location
 
 
 
 class _StrategySkimage(_RecognizeImages):
     _SKIMAGE_DEFAULT_CONFIDENCE = 0.99
+        
+    def _try_locate(self, ref_image, locate_all=False):
+        '''Tries to locate the reference image on the screen. 
+        Return values: 
+        - locate_all=False: None or 1 location tuple (finds max 1)
+        - locate_all=True:  None or list of location tuples (finds 0..n)
+          (GUI Debugger mode)'''
 
-    def _try_locate(self, ref_image):
-        location = None
+        confidence = self.confidence or self._SKIMAGE_DEFAULT_CONFIDENCE        
         with self._suppress_keyword_on_failure():            
             what = skimage.io.imread(ref_image, as_gray=True)
+            what_h, what_w = what.shape   
             where = rgb2gray(np.array(ag.screenshot()))
+            # detect edges on both images
             what_edge = self.detect_edges(what)
-            what_where = self.detect_edges(where)            
+            what_where = self.detect_edges(where)  
+            # find match peaks          
             peakmap = match_template(what_where, what_edge)
-            # Many skimage tutorials suggest to use peak_local_max to filter 
-            # the list of peaks further. This is not needed, as we only need 
-            # the best and one match which is the index with the highest peak
-            # value. 
-            # Transform index to coordinates of highest peak
-            ij = np.unravel_index(np.argmax(peakmap), peakmap.shape)
-            # Extract coordinates of the highest peak
-            x, y = ij[::-1]
-            # higest peak level
-            peak = peakmap[y][x]
-            confidence = self.confidence or self._SKIMAGE_DEFAULT_CONFIDENCE
-            if peak > confidence:      
-                hwhat, wwhat = what.shape          
-                location = (x, y, wwhat, hwhat)
-        return location
+
+            if locate_all: 
+                # https://stackoverflow.com/questions/48732991/search-for-all-templates-using-scikit-image                
+                peaks = peak_local_max(peakmap,threshold_rel=confidence) 
+                peak_coords = zip(peaks[:,1], peaks[:,0])
+                locations = []
+                for i, pk in enumerate(peak_coords):
+                    loc = (pk[0], pk[1], what_w, what_h)
+                    #yield loc
+                    locations.append(loc)
+                if len(locations) > 0: 
+                    location = locations
+                else: 
+                    location = []
+            else: 
+                ij = np.unravel_index(np.argmax(peakmap), peakmap.shape)
+                x, y = ij[::-1]
+                peak = peakmap[y][x]
+                if peak > confidence:                      
+                    locations = [(x, y, what_w, what_h)]                
+                                    
+                # Transform index to coordinates of highest peak
+                ij = np.unravel_index(np.argmax(peakmap), peakmap.shape)
+                # Extract coordinates of the highest peak
+                x, y = ij[::-1]
+                # higest peak level
+                peak = peakmap[y][x]        
+                if peak > confidence:      
+                    hwhat, wwhat = what.shape          
+                    location = (x, y, wwhat, hwhat)
+                else:
+                    location = None
+            return location
 
     def _detect_edges(self, img, sigma, low, high):
         edge_img = skimage.feature.canny(

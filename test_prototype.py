@@ -42,56 +42,96 @@ def detect_edges(img, sigma, low, high):
     return edge_img
 
 
-def plot_result(what, where, peakmap, title, x_peak, y_peak):    
-    fig = plt.figure(figsize=(8, 3))
-    ax1 = plt.subplot(1, 3, 1)
-    ax2 = plt.subplot(1, 3, 2)
-    ax3 = plt.subplot(1, 3, 3, sharex=ax2, sharey=ax2)
+def plot_result(what, where, what_edges, where_edges, peakmap, title, locations):   
 
-    ax1.imshow(what, cmap=plt.cm.gray)
-    #ax1.set_axis_off()
-    ax1.set_title('what')
+    fig, axs = plt.subplots(2, 3)
+    sp_what = axs[0, 0]
+    sp_where = axs[0, 1]
+    sp_invisible = axs[0, 2]
+    sp_what_edges = axs[1, 0]
+    sp_where_edges = axs[1, 1]
+    sp_peakmap = axs[1, 2]
+    
+    # ROW 1 ================================
+    sp_what.imshow(what, cmap=plt.cm.gray)
+    sp_what.set_title('what')
+    sp_where.imshow(where, cmap=plt.cm.gray)
 
-    ax2.imshow(where, cmap=plt.cm.gray)
-    #ax2.set_axis_off()
-    ax2.set_title('where')
-    # highlight matched region
-    hwhat, wwhat = what.shape
-    rect = plt.Rectangle((x_peak-int(wwhat/2), y_peak-int(hwhat/2)), wwhat, hwhat, edgecolor='r', facecolor='none')
-    ax2.add_patch(rect)
+    sp_where.set_title('where')
+    sp_where.sharex(sp_where_edges)
+    sp_where.sharey(sp_where_edges)
 
-    ax3.imshow(peakmap)
-    #ax3.set_axis_off()
-    ax3.set_title('peakmap')
-    # highlight matched region
-    ax3.autoscale(False)
-    ax3.plot(x_peak, y_peak, 'o', markeredgecolor='r', markerfacecolor='none', markersize=10)
+    sp_invisible.set_visible(False)
 
+    # ROW 2 ================================
+    sp_what_edges.imshow(what_edges, cmap=plt.cm.gray)    
+    sp_what_edges.set_title('what_edge')
 
+    sp_where_edges.imshow(where_edges, cmap=plt.cm.gray)
+    sp_where_edges.set_title('where_edge')
+
+    sp_peakmap.imshow(peakmap)
+    sp_peakmap.set_title('peakmap')
+    sp_peakmap.sharex(sp_where_edges)
+    sp_peakmap.sharey(sp_where_edges)
+    
+    for loc in locations:
+        # highlight matched region
+        #hwhat, wwhat = what_edges.shape
+        # TODO: 
+        #rect = plt.Rectangle((x_peak-int(wwhat/2), y_peak-int(hwhat/2)), wwhat, hwhat, edgecolor='r', facecolor='none')
+        rect = plt.Rectangle((loc[0], loc[1]), loc[2], loc[3], edgecolor='r', facecolor='none')
+        sp_where_edges.add_patch(rect)
+
+    
+    sp_peakmap.autoscale(False)    
     fig.suptitle(title, fontsize=14, fontweight='bold')
+    
     plt.show()
+    pass
 
 
-def compare(what_name, sigma=2.0, low=0.1, high=0.3, confidence=0.99):
+
+
+
+def try_locate(what_name, sigma=2.0, low=0.1, high=0.3, confidence=0.99, locate_all=False):
+    locations = None
     what = skimage.io.imread('..\\..\\images\\' + what_name, as_gray=True)
+    what_h, what_w = what.shape   
     where = rgb2gray(np.array(ag.screenshot()))
     what_edge = detect_edges(what, sigma, low, high)
-    what_where = detect_edges(where, sigma, low, high)
-    peakmap = match_template(what_where, what_edge, pad_input=True)
-    ij = np.unravel_index(np.argmax(peakmap), peakmap.shape)
-    x, y = ij[::-1]
+    where_edges = detect_edges(where, sigma, low, high)
+    peakmap = match_template(where_edges, what_edge)
 
-    peak = peakmap[y][x]
-    matched = peak > confidence
-    title = f"Match = {str(matched)} (peak at {peak} > {confidence})"
+    if locate_all: 
+        # https://stackoverflow.com/questions/48732991/search-for-all-templates-using-scikit-image
+        # peaks = peak_local_max(peakmap)
+        peaks = peak_local_max(peakmap,threshold_rel=confidence) 
+        peak_coords = zip(peaks[:,1], peaks[:,0])
+        locations = []
+        for i, pk in enumerate(peak_coords):
+            locations.append((pk[0], pk[1], what_w, what_h))
+        pass
+        title = f"{len(locations)} matches with confidence level > {confidence}"
+    else: 
+        ij = np.unravel_index(np.argmax(peakmap), peakmap.shape)
+        x, y = ij[::-1]
+        peak = peakmap[y][x]
+        if peak > confidence:                      
+            locations = [(x, y, what_w, what_h)]
+        matched = peak > confidence
+        title = f"Match = {str(matched)} (peak at {peak} > {confidence})"
+
 #    plot_result(what, where, peakmap, title, x,y)
-    plot_result(what_edge, what_where, peakmap, title, x,y)
+    plot_result(what, where, what_edge, where_edges, peakmap, title, locations)
     
 
 #image = skimage.io.imread('..\\..\\images\\screen.png', as_gray=True)
 
+#try_locate('ok.png', sigma=1.4, confidence=0.8, locate_all=True)
 
-compare('10.png')
+try_locate('ih_click_image.png', sigma=1.0, confidence=0.8, locate_all=True)
+#compare('win.png')
 #cProfile.run('compare()')
 
 # confidence:            0.9999999999999

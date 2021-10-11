@@ -5,14 +5,22 @@
 from src.ImageHorizonLibrary import ImageHorizonLibrary
 
 #ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='skimage')
+#ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='skimage', edge_sigma=1.0)
 ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='pyautogui')
 # ih.does_exist("win")
-# foo = ih.click_image("win")
+foo = ih._locate_all("foo")
+# foo = ih._locate_all("ok")
+#foo = ih.click_image("win")
 # ih.set_strategy('skimage', edge_sigma=2, edge_low_threshold=0.1, edge_high_threshold=0.3)
 # foo = ih.click_image("win")
 # ih.set_strategy('skimage', edge_sigma=4, edge_low_threshold=0.2, edge_high_threshold=0.4)
 # ih.set_strategy('pyautogui')
 # ih.set_strategy('pyautogui')
+
+
+# ih.set_strategy('pyautogui')
+
+#ih.wait_for('ih_click_image')
 
 
 ih.wait_for('3')
@@ -22,3 +30,18 @@ ih.click_image('7')
 ih.click_image('equal')
 ih.wait_for('10')
 pass
+
+# Fooo
+
+# Fooo
+
+# Fooo
+
+# Fooo
+
+# Fooo
+
+# Fooo
+
+# Fooo
+
