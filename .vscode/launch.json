@@ -12,6 +12,20 @@
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/src/ImageHorizonLibrary",
             "justMyCode": false
+        },
+        {
+            "name": "libdoc",
+            "type": "python",
+            "request": "launch",
+            "module": "robot.libdoc",
+            "args": [
+                "-P",
+                "src",
+                "ImageHorizonLibrary",
+                "doc\\ImageHorizonLibrary.html"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false
         }
     ]
 }

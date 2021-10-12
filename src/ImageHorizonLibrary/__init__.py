@@ -99,13 +99,14 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
     Confidence level can be set during `library importing` and during the test 
     case with keyword `Set Confidence` to a decimal value between 0 and 1 
     (inclusive). It changes the image recognition results depending on the
-    recognition strategies, which are explained in the following.
+    *recognition strategies*, which are explained in the following.
 
     === Strategy "pyautogui" (default) ===
     This is the default method to recognize images on the screen and the perfect 
     choice to start writing tests. In case of recognition errors, slight pixel 
     derivations can be corrected with a lower confidence level.
-    Confidence level in strategy ``pyautogui`` is a decimal value between
+    
+    *Confidence level* in strategy ``pyautogui`` is a decimal value between
     0 and 1 (inclusive) and defines how many percent of the reference image pixels
     must match the found region's image (1.0 = 100% = default).
 
@@ -120,38 +121,45 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
 
     === Strategy "skimage" ===
     Image recognition purely based on a percentual measurement of identical pixels
-    reaches its limitations when the area to match contains a disproportionate amount
-    of unpredictable pixels. 
-    A practical example where this problem can occurr (and it did, which gave the
+    reaches its limitations when the area to match contains a *disproportionate amount
+    of unpredictable pixels*. 
+
+    A practical example where this problem can occurr (and it _did_, which gave the
     idea for the skimage integration) is a web application showing a topographical 
     map in greyscale with a layer of interstate highways (black lines). 
     
-    Why failed ImageHorizonLibrary in `pyautogui` mode to detect the map? 
+    Why failed ImageHorizonLibrary in `pyautogui` mode to detect the map?
+
     Because in a handful of all test executions the topographic pixels (=everything between
     the highway lines) showed a slight deviation in brightness, invisible for the naked eye.
-    But an image diff showed that the amount of different pixels was about 95%...
-    Testing with a confidence level of 5% is insane. That's why `skimage` was implemented
-    as an alternative recognition strategy.  
+    But an image diff prooved that the amount of different pixels was more than 90%...
+    Testing with a confidence level of 5% is insane. 
+    
+    That's why `skimage` was implemented as an alternative recognition strategy.  
 
-    [https://scikit-image.org/|scikit-image] (in short: "skimage") is a versatile 
+    [https://scikit-image.org/|scikit-image] (in short: _"skimage"_) is a versatile 
     set of image processing routines for Python. In ImageHorizonLibrary it is used
     to transform the reference_image and the search area 
     ([https://scikit-image.org/docs/dev/auto_examples/edges/plot_canny.html#sphx-glr-auto-examples-edges-plot-canny-py|"Canny edge detection"]) 
-    before they are compared ([https://scikit-image.org/docs/dev/auto_examples/features_detection/plot_template.html][template matching]).
+    before they are compared ([https://scikit-image.org/docs/dev/auto_examples/features_detection/plot_template.html|template matching]).
 
-    In detail this is a multi-step process, applied on both images: 
+    Edge detection used in strategy `skimage` is a multi-step process, applied on both images: 
 
-    - apply a [https://en.wikipedia.org/wiki/Gaussian_filter][Gaussian filter] (removes noise)
-    - apply a [https://en.wikipedia.org/wiki/Sobel_operator][Sobel filter] (remove non-max pixels, get a 1 pixel edge curve) 
-    - separate weak edges from strong ones with [https://en.wikipedia.org/wiki/Canny_edge_detector#Edge_tracking_by_hysteresis][hysteresis] 
-    - apply the `template_matching` routine to get a [https://en.wikipedia.org/wiki/Cross-correlation][cross correlation] matrix of values from -1 (no correlation) to +1 (perfect correlation).
-    - Filter out only those coordinates with values greater than the confidence level, take the max
+    - apply a [https://en.wikipedia.org/wiki/Gaussian_filter|Gaussian filter] (removes noise)
+    - apply a [https://en.wikipedia.org/wiki/Sobel_operator|Sobel filter] (remove non-max pixels, get a 1 pixel edge curve) 
+    - separate weak edges from strong ones with [https://en.wikipedia.org/wiki/Canny_edge_detector#Edge_tracking_by_hysteresis|hysteresis] 
+    - apply the `template_matching` routine to get a [https://en.wikipedia.org/wiki/Cross-correlation|cross correlation] matrix of values from -1 (no correlation) to +1 (perfect correlation).
+    - Filter out only those coordinates with values greater than the *confidence level*, take the max
+
+    In this way, image recognition is done on the preprocessed images, reduced
+    from any noise to the edge information.
 
     = Performance =
 
     Locating images on screen, especially if screen resolution is large and
-    reference image is also large, might take considerable time. It is
-    therefore advisable to save the returned coordinates if you are
+    reference image is also large, might take considerable time, regardless
+    of the strategy.
+    It is therefore advisable to save the returned coordinates if you are
     manipulating the same context many times in the row:
 
     | `Wait For`                   | label Name |     |
@@ -189,6 +197,8 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
         ``strategy`` sets the way how images are detected on the screen. 
         - `pyautogui` - (Default)
         - `skimage` - Advanced image recognition options with canny edge detection
+
+        The `skimage` strategy allows these additional parameters:
           - `edge_sigma` - Gaussian blur intensity
           - `edge_low_threshold` - low pixel gradient threshold
           - `edge_high_threshold` - high pixel gradient threshold
@@ -240,6 +250,7 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
         new_bases = tuple([item for item in strategy_bases if item not in self._class_bases]) + self._class_bases
         # Now construct a new class: keep its name, use the new bases and duplicate its namespace
         new_class = type(self.__class__.__name__, new_bases, self.__dict__.copy())
+        new_class.__doc__ = self.__doc__
         # Give self a new identity
         self.__class__ = new_class
         # Effects when switching to $strategy: 

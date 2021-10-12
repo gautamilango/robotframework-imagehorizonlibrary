@@ -24,6 +24,10 @@ ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='skimage')
 
 #ih.wait_for('ih_click_image')
 
+class test():
+    '''FOobar'''
+    pass
+
 
 ih.wait_for('3')
 ih.click_image('3')
