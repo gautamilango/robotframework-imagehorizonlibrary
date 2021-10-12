@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 # Run this test while the Windows 10 calculator is already open
 
+from ImageHorizonLibrary import ImageHorizonLibrary
 
-from src.ImageHorizonLibrary import ImageHorizonLibrary
 
-#ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='skimage')
+# from src.ImageHorizonLibrary import ImageHorizonLibrary
+
+#ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='pyautogui')
 #ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='skimage', edge_sigma=1.0)
-ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='pyautogui')
 # ih.does_exist("win")
+ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='skimage')
 foo = ih._locate_all("foo")
 # foo = ih._locate_all("ok")
 #foo = ih.click_image("win")

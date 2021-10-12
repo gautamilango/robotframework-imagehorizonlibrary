@@ -130,7 +130,8 @@ def try_locate(what_name, sigma=2.0, low=0.1, high=0.3, confidence=0.99, locate_
 
 #try_locate('ok.png', sigma=1.4, confidence=0.8, locate_all=True)
 
-try_locate('ih_click_image.png', sigma=1.0, confidence=0.8, locate_all=True)
+try_locate('3.png', locate_all=True)
+#try_locate('3.png', sigma=1.0, confidence=0.8, locate_all=True)
 #compare('win.png')
 #cProfile.run('compare()')
 
