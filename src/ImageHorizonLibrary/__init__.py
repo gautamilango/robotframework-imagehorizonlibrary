@@ -54,7 +54,7 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
     = Image Recognition = 
 
     == Reference image names ==
-    ``reference_image`` parameter can be either a single file, or a folder.
+    ``reference_image`` parameter can be either a single file or a folder.
     If ``reference_image`` is a folder, image recognition is tried separately
     for each image in that folder, in alphabetical order until a match is found.
 
@@ -81,13 +81,13 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
     | `Click Image`    | button Login Without User Credentials |                         | # Path is images/button_login_without_user_credentials.png |
 
     == Handling Recognition problems ==
-    By default, image recognition in ImageHorizonLibrary is done with ``pyautogui``
-    which always expects a pixel-perfect matching between the reference image and
-    a region on th screen. 
+    By default, image recognition in ImageHorizonLibrary is done with the Python
+    library ``pyautogui``. It always expects a 100%, pixel-perfect matching between 
+    the reference image and the area to search. 
 
-    Problems can arise when
+    A 100% match is a good default but problems can arise when:
 
-    - the application's GUI has transpareny effects
+    - the application's GUI uses transpareny effects
     - the screen resolution/the window size changes
     - font aliasing is used for dynamic text
     - compression algorithms in RDP/Citrix cause invisible artifacts
@@ -99,17 +99,15 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
     Confidence level can be set during `library importing` and during the test 
     case with keyword `Set Confidence` to a decimal value between 0 and 1 
     (inclusive). It changes the image recognition results depending on the
-    recognition strategies: 
-    - ``pyautogui`` (default)
-    - ``skimage``
-    
-    === Confidence Level (pyautogui) ===
+    recognition strategies, which are explained in the following.
+
+    === Strategy "pyautogui" (default) ===
+    This is the default method to recognize images on the screen and the perfect 
+    choice to start writing tests. In case of recognition errors, slight pixel 
+    derivations can be corrected with a lower confidence level.
     Confidence level in strategy ``pyautogui`` is a decimal value between
     0 and 1 (inclusive) and defines how many percent of the reference image pixels
-    must match the found region's image (1=100%=default).
-
-    If you do not encouner any recognition problems or only a small amount of
-    pixels vary, ``pyautogui`` with confidence is the right choice. 
+    must match the found region's image (1.0 = 100% = default).
 
     To use confidence level in mode ``pyautogui`` the 
     [https://pypi.org/project/opencv-python|opencv-python] Python package
@@ -117,9 +115,37 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
 
     | $ pip install opencv-python
 
-    After installation, the library will use OpenCV, which enables setting the
-    
+    After installation, the library will automatically use OpenCV for confidence 
+    levels lower than 1.0.
 
+    === Strategy "skimage" ===
+    Image recognition purely based on a percentual measurement of identical pixels
+    reaches its limitations when the area to match contains a disproportionate amount
+    of unpredictable pixels. 
+    A practical example where this problem can occurr (and it did, which gave the
+    idea for the skimage integration) is a web application showing a topographical 
+    map in greyscale with a layer of interstate highways (black lines). 
+    
+    Why failed ImageHorizonLibrary in `pyautogui` mode to detect the map? 
+    Because in a handful of all test executions the topographic pixels (=everything between
+    the highway lines) showed a slight deviation in brightness, invisible for the naked eye.
+    But an image diff showed that the amount of different pixels was about 95%...
+    Testing with a confidence level of 5% is insane. That's why `skimage` was implemented
+    as an alternative recognition strategy.  
+
+    [https://scikit-image.org/|scikit-image] (in short: "skimage") is a versatile 
+    set of image processing routines for Python. In ImageHorizonLibrary it is used
+    to transform the reference_image and the search area 
+    ([https://scikit-image.org/docs/dev/auto_examples/edges/plot_canny.html#sphx-glr-auto-examples-edges-plot-canny-py|"Canny edge detection"]) 
+    before they are compared ([https://scikit-image.org/docs/dev/auto_examples/features_detection/plot_template.html][template matching]).
+
+    In detail this is a multi-step process, applied on both images: 
+
+    - apply a [https://en.wikipedia.org/wiki/Gaussian_filter][Gaussian filter] (removes noise)
+    - apply a [https://en.wikipedia.org/wiki/Sobel_operator][Sobel filter] (remove non-max pixels, get a 1 pixel edge curve) 
+    - separate weak edges from strong ones with [https://en.wikipedia.org/wiki/Canny_edge_detector#Edge_tracking_by_hysteresis][hysteresis] 
+    - apply the `template_matching` routine to get a [https://en.wikipedia.org/wiki/Cross-correlation][cross correlation] matrix of values from -1 (no correlation) to +1 (perfect correlation).
+    - Filter out only those coordinates with values greater than the confidence level, take the max
 
     = Performance =
 
