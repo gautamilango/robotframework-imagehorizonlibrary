@@ -24,7 +24,7 @@ class TestMainClass(TestCase):
                                   {'pyautogui': self.pyautogui_mock,
                                    'tkinter': self.Tk_mock})
         self.patcher.start()
-        from src.ImageHorizonLibrary import ImageHorizonLibrary
+        from ImageHorizonLibrary import ImageHorizonLibrary
         self.lib = ImageHorizonLibrary()
 
     def tearDown(self):
@@ -33,7 +33,7 @@ class TestMainClass(TestCase):
         self.patcher.stop()
 
     def test_copy(self):
-        from src.ImageHorizonLibrary import ImageHorizonLibrary
+        from ImageHorizonLibrary import ImageHorizonLibrary
 
         with patch.object(ImageHorizonLibrary, '_press') as press_mock:
             retval = self.lib.copy()
@@ -56,7 +56,7 @@ class TestMainClass(TestCase):
 
     def _get_cmd(self, jython, path):
         cmd = ('JYTHONPATH={path} {jython} -c '
-               '"from src.ImageHorizonLibrary import ImageHorizonLibrary"')
+               '"from ImageHorizonLibrary import ImageHorizonLibrary"')
         return cmd.format(jython=jython, path=path)
 
     def test_importing_fails_on_java(self):

@@ -7,12 +7,12 @@ from contextlib import contextmanager
 import pyautogui as ag
 from robot.api import logger as LOGGER
 
-import skimage
-import skimage.feature
-import skimage.viewer
-from skimage.feature import match_template
-from skimage.feature import peak_local_max
+#import skimage
+#import skimage.feature
+#import skimage.viewer
+from skimage.feature import match_template, peak_local_max, canny
 from skimage.color import rgb2gray
+from skimage.io import imread
 
 import numpy as np
 
@@ -316,7 +316,7 @@ class _StrategySkimage(_RecognizeImages):
 
         confidence = self.confidence or self._SKIMAGE_DEFAULT_CONFIDENCE        
         with self._suppress_keyword_on_failure():            
-            what = skimage.io.imread(ref_image, as_gray=True)
+            what = imread(ref_image, as_gray=True)
             what_h, what_w = what.shape   
             where = rgb2gray(np.array(ag.screenshot()))
             # detect edges on both images
@@ -359,7 +359,7 @@ class _StrategySkimage(_RecognizeImages):
             return location
 
     def _detect_edges(self, img, sigma, low, high):
-        edge_img = skimage.feature.canny(
+        edge_img = canny(
             image=img,
             sigma=sigma,
             low_threshold=low,

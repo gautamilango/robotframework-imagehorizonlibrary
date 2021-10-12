@@ -34,7 +34,7 @@ class TestKeyboard(TestCase):
         self.mock.KEYBOARD_KEYS = KEYBOARD_KEYS
         self.patcher = patch.dict('sys.modules', {'pyautogui': self.mock})
         self.patcher.start()
-        from src.ImageHorizonLibrary import ImageHorizonLibrary
+        from ImageHorizonLibrary import ImageHorizonLibrary
         self.lib = ImageHorizonLibrary()
 
     def tearDown(self):
@@ -72,7 +72,7 @@ class TestKeyboard(TestCase):
         self.mock.keyUp.assert_called_once_with('shift')
 
     def test_type_with_keys_down_with_invalid_keys(self):
-        from src.ImageHorizonLibrary import KeyboardException
+        from ImageHorizonLibrary import KeyboardException
 
         expected_msg = ('Invalid keyboard key "enter", valid keyboard keys '
                         'are:\n%r' % ', '.join(self.mock.KEYBOARD_KEYS))

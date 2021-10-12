@@ -39,18 +39,104 @@ from .version import VERSION
 
 __version__ = VERSION
 
+class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
+    '''A cross-platform Robot Framework library for GUI automation.
+
+    ImageHorizonLibrary provides keyboard and mouse actions as well as
+    facilities to recognize images on screen. It can also take screenshots in
+    case of failure or otherwise.
 
 
+    This library is built on top of
+    [https://pyautogui.readthedocs.org|pyautogui] and
+    [https://scikit-image.org|scikit-image]
+
+    = Image Recognition = 
+
+    == Reference image names ==
+    ``reference_image`` parameter can be either a single file, or a folder.
+    If ``reference_image`` is a folder, image recognition is tried separately
+    for each image in that folder, in alphabetical order until a match is found.
+
+    For ease of use, reference image names are automatically normalized
+    according to the following rules:
+
+    - The name is lower cased: ``MYPICTURE`` and ``mYPiCtUrE`` become
+      ``mypicture``
+
+    - All spaces are converted to underscore ``_``: ``my picture`` becomes
+      ``my_picture``
+
+    - If the image name does not end in ``.png``, it will be added:
+      ``mypicture`` becomes ``mypicture.png``
+
+    - Path to _reference folder_ is prepended. This option must be given when
+      `importing` the library.
+
+    Using good names for reference images is evident from easy-to-read test
+    data:
+
+    | `Import Library` | ImageHorizonLibrary                   | reference_folder=images |                                                            |
+    | `Click Image`    | popup Window title                    |                         | # Path is images/popup_window_title.png                    |
+    | `Click Image`    | button Login Without User Credentials |                         | # Path is images/button_login_without_user_credentials.png |
+
+    == Handling Recognition problems ==
+    By default, image recognition in ImageHorizonLibrary is done with ``pyautogui``
+    which always expects a pixel-perfect matching between the reference image and
+    a region on th screen. 
+
+    Problems can arise when
+
+    - the application's GUI has transpareny effects
+    - the screen resolution/the window size changes
+    - font aliasing is used for dynamic text
+    - compression algorithms in RDP/Citrix cause invisible artifacts
+    - ...and many more situations.
+    
+    ImageHorizon comes with a parameter ``confidence level`` which allows to
+    adjust the precision manually and make the recognition more "greedy".
+
+    Confidence level can be set during `library importing` and during the test 
+    case with keyword `Set Confidence` to a decimal value between 0 and 1 
+    (inclusive). It changes the image recognition results depending on the
+    recognition strategies: 
+    - ``pyautogui`` (default)
+    - ``skimage``
+    
+    === Confidence Level (pyautogui) ===
+    Confidence level in strategy ``pyautogui`` is a decimal value between
+    0 and 1 (inclusive) and defines how many percent of the reference image pixels
+    must match the found region's image (1=100%=default).
+
+    If you do not encouner any recognition problems or only a small amount of
+    pixels vary, ``pyautogui`` with confidence is the right choice. 
+
+    To use confidence level in mode ``pyautogui`` the 
+    [https://pypi.org/project/opencv-python|opencv-python] Python package
+    must be installed separately:
+
+    | $ pip install opencv-python
+
+    After installation, the library will use OpenCV, which enables setting the
+    
 
 
-class ImageHorizonLibrary(
-                          _Keyboard,
-                          _Mouse,
-                          _OperatingSystem,
-                          _RecognizeImages,
-                         _Screenshot
-                        ):
-    '''A cross-platform Robot Framework library for GUI automation.    '''
+    = Performance =
+
+    Locating images on screen, especially if screen resolution is large and
+    reference image is also large, might take considerable time. It is
+    therefore advisable to save the returned coordinates if you are
+    manipulating the same context many times in the row:
+
+    | `Wait For`                   | label Name |     |
+    | `Click To The Left Of Image` | label Name | 200 |
+
+    In the above example, same image is located twice. Below is an example how
+    we can leverage the returned location:
+
+    | ${location}=           | `Wait For`  | label Name |
+    | `Click To The Left Of` | ${location} | 200        |
+    '''    
 
     ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
     ROBOT_LIBRARY_VERSION = VERSION

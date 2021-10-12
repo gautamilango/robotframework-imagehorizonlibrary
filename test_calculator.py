@@ -10,7 +10,7 @@ from ImageHorizonLibrary import ImageHorizonLibrary
 #ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='skimage', edge_sigma=1.0)
 # ih.does_exist("win")
 ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='skimage')
-foo = ih._locate_all("foo")
+# foo = ih._locate_all("foo")
 # foo = ih._locate_all("ok")
 #foo = ih.click_image("win")
 # ih.set_strategy('skimage', edge_sigma=2, edge_low_threshold=0.1, edge_high_threshold=0.3)
