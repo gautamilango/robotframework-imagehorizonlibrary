@@ -244,7 +244,7 @@ class _RecognizeImages(object):
         Fail if the image is not found on the screen after ``timeout`` has
         expired.
 
-        See `Reference image names` for documentation for ``reference_image``.
+        See `Reference images` for further documentation.
 
         ``timeout`` is given in seconds.
 
