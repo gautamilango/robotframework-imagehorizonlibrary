@@ -1,5 +1,5 @@
 ===================
-ImageHorizonLibrary
+ImageHorizonLibraryXXX
 ===================
 
 This Robot Framework library provides the facilities to automate GUIs based on
