@@ -35,7 +35,7 @@ Prerequisites
 
 - `Python 3.x`
 - pip_ for easy installation
-- pyautogui_ and `it's prerequisites`_
+- pyautogui_ and `its prerequisites`_
 - `Robot Framework`_
 
 On Ubuntu, you need to take `special measures`_ to make the screenshot

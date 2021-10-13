@@ -42,18 +42,16 @@ __version__ = VERSION
 class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
     '''A cross-platform Robot Framework library for GUI automation.
 
-    ImageHorizonLibrary provides keyboard and mouse actions as well as
-    facilities to recognize images on screen. It can also take screenshots in
-    case of failure or otherwise.
+    *Key features*: 
+    - Automates *keyboard and mouse actions* on the screen (based on [https://pyautogui.readthedocs.org|pyautogui]).
+    - The regions to execute these actions on (buttons, sliders, input fields etc.) are determined by `reference images` which the library detects on the screen - independently of the OS or the application type.
+    - Two different image `recognition strategies` ([https://pyautogui.readthedocs.org|pyautogui] and [https://scikit-image.org|scikit-image]) facilitate the recognition of unpredictable pixel deviations.
+    - The library can also take screenshots in case of failure or by intention.
 
-
-    This library is built on top of
-    [https://pyautogui.readthedocs.org|pyautogui] and
-    [https://scikit-image.org|scikit-image]
 
     = Image Recognition = 
 
-    == Reference image names ==
+    == Reference images ==
     ``reference_image`` parameter can be either a single file or a folder.
     If ``reference_image`` is a folder, image recognition is tried separately
     for each image in that folder, in alphabetical order until a match is found.
@@ -80,7 +78,7 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
     | `Click Image`    | popup Window title                    |                         | # Path is images/popup_window_title.png                    |
     | `Click Image`    | button Login Without User Credentials |                         | # Path is images/button_login_without_user_credentials.png |
 
-    == Handling Recognition problems ==
+    == Recognition strategies ==
     By default, image recognition in ImageHorizonLibrary is done with the Python
     library ``pyautogui``. It always expects a 100%, pixel-perfect matching between 
     the reference image and the area to search. 
@@ -106,7 +104,7 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
     choice to start writing tests. In case of recognition errors, slight pixel 
     derivations can be corrected with a lower confidence level.
     
-    *Confidence level* in strategy ``pyautogui`` is a decimal value between
+    ``confidence`` level in strategy ``pyautogui`` is a decimal value between
     0 and 1 (inclusive) and defines how many percent of the reference image pixels
     must match the found region's image (1.0 = 100% = default).
 
@@ -128,14 +126,14 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
     idea for the skimage integration) is a web application showing a topographical 
     map in greyscale with a layer of interstate highways (black lines). 
     
-    Why failed ImageHorizonLibrary in `pyautogui` mode to detect the map?
+    Why failed ImageHorizonLibrary in ``pyautogui`` mode to detect the map?
 
     Because in a handful of all test executions the topographic pixels (=everything between
     the highway lines) showed a slight deviation in brightness, invisible for the naked eye.
     But an image diff prooved that the amount of different pixels was more than 90%...
     Testing with a confidence level of 5% is insane. 
     
-    That's why `skimage` was implemented as an alternative recognition strategy.  
+    That's why ``skimage`` was implemented as an alternative recognition strategy.  
 
     [https://scikit-image.org/|scikit-image] (in short: _"skimage"_) is a versatile 
     set of image processing routines for Python. In ImageHorizonLibrary it is used
@@ -143,16 +141,21 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
     ([https://scikit-image.org/docs/dev/auto_examples/edges/plot_canny.html#sphx-glr-auto-examples-edges-plot-canny-py|"Canny edge detection"]) 
     before they are compared ([https://scikit-image.org/docs/dev/auto_examples/features_detection/plot_template.html|template matching]).
 
-    Edge detection used in strategy `skimage` is a multi-step process, applied on both images: 
+    Edge detection used in strategy ``skimage`` is a multi-step process, applied on both images: 
 
     - apply a [https://en.wikipedia.org/wiki/Gaussian_filter|Gaussian filter] (removes noise)
     - apply a [https://en.wikipedia.org/wiki/Sobel_operator|Sobel filter] (remove non-max pixels, get a 1 pixel edge curve) 
     - separate weak edges from strong ones with [https://en.wikipedia.org/wiki/Canny_edge_detector#Edge_tracking_by_hysteresis|hysteresis] 
     - apply the `template_matching` routine to get a [https://en.wikipedia.org/wiki/Cross-correlation|cross correlation] matrix of values from -1 (no correlation) to +1 (perfect correlation).
-    - Filter out only those coordinates with values greater than the *confidence level*, take the max
+    - Filter out only those coordinates with values greater than the ``confidence`` level, take the max
 
     In this way, image recognition is done on the preprocessed images, reduced
     from any noise to the edge information.
+
+    To use strategy ``skimage`` (with or without ``confidence`` level) the 
+    [https://scikit-image.org|scikit-image] Python package must be installed separately:
+
+    | $ pip install scikit-image
 
     = Performance =
 
@@ -194,14 +197,15 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
         keywords fail. If you wish to not take screenshots, use for example
         `BuiltIn.No Operation`. Keyword must however be a valid keyword.
         
-        ``strategy`` sets the way how images are detected on the screen. 
-        - `pyautogui` - (Default)
-        - `skimage` - Advanced image recognition options with canny edge detection
+        ``strategy`` sets the way how images are detected on the screen. See also 
+        keyword `Set Strategy` to change the strategy during the test. Parameters:
+        - ``pyautogui`` - (Default)
+        - ``skimage`` - Advanced image recognition options with canny edge detection
 
-        The `skimage` strategy allows these additional parameters:
-          - `edge_sigma` - Gaussian blur intensity
-          - `edge_low_threshold` - low pixel gradient threshold
-          - `edge_high_threshold` - high pixel gradient threshold
+        The ``skimage`` strategy allows these additional parameters:
+          - ``edge_sigma`` - Gaussian blur intensity
+          - ``edge_low_threshold`` - low pixel gradient threshold
+          - ``edge_high_threshold`` - high pixel gradient threshold
         '''
                 
         # _RecognizeImages.set_strategy(self, strategy)
@@ -226,12 +230,16 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
 
 
     def set_strategy(self, strategy, edge_sigma=2.0, edge_low_threshold=0.1, edge_high_threshold=0.3):
-        '''Sets the way how images are detected on the screen. 
-        
-        `strategy` is either one of the values: 
-        - `pyautogui` - (Default)
-        - `skimage` - Advanced image recognition options with canny edge detection
-        '''
+        '''Changes the way how images are detected on the screen. This can also be done globally during `Importing`.
+        Parameters:
+        - ``pyautogui`` - (Default)
+        - ``skimage`` - Advanced image recognition options with canny edge detection
+
+        The ``skimage`` strategy allows these additional parameters:
+          - ``edge_sigma`` - Gaussian blur intensity
+          - ``edge_low_threshold`` - low pixel gradient threshold
+          - ``edge_high_threshold`` - high pixel gradient threshold'''
+
         self.strategy = strategy
         if strategy == 'pyautogui':
             strategy_cls = _StrategyPyautogui
