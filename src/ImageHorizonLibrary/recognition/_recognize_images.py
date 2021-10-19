@@ -207,14 +207,15 @@ class _RecognizeImages(object):
             y = y / 2
         return (x, y)
 
-    def _locate_all(self, reference_image):   
-        '''Tries to locate all occurrences of the reference image on the screen.   
+    def _locate_all(self, reference_image, haystack_image=None):   
+        '''Tries to locate all occurrences of the reference image on the screen
+        or on the haystack image, if given.
         Returns a list of location tuples (finds 0..n)''' 
         reference_images = self._get_reference_images(reference_image)   
         if len(reference_images) > 1: 
             raise InvalidImageException(
                 f'Locating ALL occurences of MANY files ({", ".join(reference_images)}) is not supported.')        
-        locations = self._try_locate(reference_images[0], locate_all=True)
+        locations = self._try_locate(reference_images[0], locate_all=True, haystack_image=haystack_image)
         return locations
 
     def does_exist(self, reference_image):
@@ -268,8 +269,8 @@ class _RecognizeImages(object):
      
 class _StrategyPyautogui(_RecognizeImages):  
     
-    def _try_locate(self, ref_image, locate_all=False):
-        '''Tries to locate the reference image on the screen. 
+    def _try_locate(self, ref_image, haystack_image=None, locate_all=False):
+        '''Tries to locate the reference image on the screen or the haystack_image. 
         Return values: 
         - locate_all=False: None or 1 location tuple (finds max 1)
         - locate_all=True:  None or list of location tuples (finds 0..n)
@@ -307,8 +308,8 @@ class _StrategyPyautogui(_RecognizeImages):
 class _StrategySkimage(_RecognizeImages):
     _SKIMAGE_DEFAULT_CONFIDENCE = 0.99
         
-    def _try_locate(self, ref_image, locate_all=False):
-        '''Tries to locate the reference image on the screen. 
+    def _try_locate(self, ref_image, haystack_image=None, locate_all=False):
+        '''Tries to locate the reference image on the screen or the provided haystack_image. 
         Return values: 
         - locate_all=False: None or 1 location tuple (finds max 1)
         - locate_all=True:  None or list of location tuples (finds 0..n)
@@ -318,7 +319,10 @@ class _StrategySkimage(_RecognizeImages):
         with self._suppress_keyword_on_failure():            
             what = imread(ref_image, as_gray=True)
             what_h, what_w = what.shape   
-            where = rgb2gray(np.array(ag.screenshot()))
+            if haystack_image is None:
+                where = rgb2gray(np.array(ag.screenshot()))
+            else:
+                where = rgb2gray(haystack_image)
             # detect edges on both images
             what_edge = self.detect_edges(what)
             what_where = self.detect_edges(where)  
