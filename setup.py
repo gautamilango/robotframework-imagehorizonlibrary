@@ -37,6 +37,7 @@ setup(name='robotframework-imagehorizonlibrary',
           'ImageHorizonLibrary',
           'ImageHorizonLibrary.interaction',
           'ImageHorizonLibrary.recognition',
+          'ImageHorizonLibrary.recognition.ImageDebugger'
       ],
       package_dir={'': 'src'},
       keywords=KEYWORDS,
