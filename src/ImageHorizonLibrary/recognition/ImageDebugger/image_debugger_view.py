@@ -10,7 +10,7 @@ import glob, os
 class UILocatorView(Tk):
     def __init__(self, controller, image_container, image_horizon_instance):
         super().__init__()
-        self.title("GUI Debugger")
+        self.title("ImageHorizonLibrary - Debugger")
         self.resizable(False, False)
         self.controller = controller
         self.image_container = image_container
@@ -41,8 +41,7 @@ class UILocatorView(Tk):
         frame_import_ref_image = LabelFrame(self.frame_main, text="Select reference image (.png)", padx=10, pady=10)
         frame_import_ref_image.pack(side=TOP, padx=10, pady=10, fill=X)
 
-        os.chdir("C:\\Users\\exgil01\\Documents\\RobotFramework-DEV\\robot-e2e\\images")
-
+        os.chdir(self.image_horizon_instance.reference_folder)
         # list_images = self.image_horizon_instance.reference_folder
         list_needle_images_names = []
         for needle_img_name in glob.glob("*.png"):
@@ -124,7 +123,7 @@ class UILocatorView(Tk):
         self.label_matches_found = Label(frame_results, textvariable=self.matches_found)
         self.label_matches_found.grid(pady=(10, 0), row=1, column=1, sticky=W)
 
-        Button(frame_results, text='Show plot results', command=self.controller.on_click_plot_results_skimage).grid(row=2, column=0, padx=0, sticky=W)
+        Button(frame_results, text='Edge detection debugger', command=self.controller.on_click_plot_results_skimage).grid(row=2, column=0, padx=0, sticky=W)
 
     def _frame_image_viewer(self):
         # ************ Image viewer ************ #

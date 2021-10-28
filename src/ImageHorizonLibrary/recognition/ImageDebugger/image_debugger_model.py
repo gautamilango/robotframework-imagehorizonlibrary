@@ -18,10 +18,10 @@ class UILocatorModel():
         
         # ROW 1 ================================
         sp_needle_img.imshow(needle_img, cmap=plt.cm.gray)
-        sp_needle_img.set_title('Needle image')
+        sp_needle_img.set_title('Needle')
         sp_haystack_img.imshow(haystack_img, cmap=plt.cm.gray)
 
-        sp_haystack_img.set_title('Haystack image')
+        sp_haystack_img.set_title('Haystack')
         sp_haystack_img.sharex(sp_haystack_img_edges)
         sp_haystack_img.sharey(sp_haystack_img_edges)
 
@@ -29,10 +29,10 @@ class UILocatorModel():
 
         # ROW 2 ================================
         sp_needle_img_edges.imshow(needle_img_edges, cmap=plt.cm.gray)    
-        sp_needle_img_edges.set_title('Needle image edges')
+        sp_needle_img_edges.set_title('Needle (edge d.)')
 
         sp_haystack_img_edges.imshow(haystack_img_edges, cmap=plt.cm.gray)
-        sp_haystack_img_edges.set_title('Haystack image edges')
+        sp_haystack_img_edges.set_title('Haystack (edge d.)')
 
         sp_peakmap.imshow(peakmap)
         sp_peakmap.set_title('Peakmap')
@@ -50,5 +50,6 @@ class UILocatorModel():
         
         sp_peakmap.autoscale(False)    
         fig.suptitle(title, fontsize=14, fontweight='bold')
+        
         
         plt.show()

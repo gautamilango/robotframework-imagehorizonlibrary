@@ -83,6 +83,6 @@ class UILocatorController:
         needle_img_edges = self.image_horizon_instance.needle_edge
         haystack_img_edges = self.image_horizon_instance.haystack_edge
         peakmap = self.image_horizon_instance.peakmap
-        title = "Blabla"
+        title = f"{self.view.matches_found.get()} matches (confidence: {self.image_horizon_instance.confidence})"
         coord = self.coord
         self.model.plot_result(needle_img, haystack_img, needle_img_edges, haystack_img_edges, peakmap, title, coord)
