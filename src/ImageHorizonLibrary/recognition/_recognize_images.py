@@ -268,14 +268,19 @@ class _RecognizeImages(object):
         debug_app = ImageDebugger(self)
     
      
-class _StrategyPyautogui(_RecognizeImages):  
-    
+class _StrategyPyautogui():  
+
+    def __init__(self, image_horizon_instance):
+        self.ih_instance = image_horizon_instance
+
     def _try_locate(self, ref_image, haystack_image=None, locate_all=False):
         '''Tries to locate the reference image on the screen or the haystack_image. 
         Return values: 
         - locate_all=False: None or 1 location tuple (finds max 1)
         - locate_all=True:  None or list of location tuples (finds 0..n)
-          (GUI Debugger mode)'''        
+          (GUI Debugger mode)'''     
+
+        ih = self.ih_instance   
         location = None
         if haystack_image is None:
             haystack_image = np.array(ag.screenshot())
@@ -285,18 +290,18 @@ class _StrategyPyautogui(_RecognizeImages):
         else:
             locate_func = ag.locate     #Copy below,take screenshots
 
-        with self._suppress_keyword_on_failure():
+        with ih._suppress_keyword_on_failure():
             try:
-                if self.has_cv and self.confidence:                    
+                if ih.has_cv and ih.confidence:                    
                     location_res = locate_func(ref_image,
                                                     haystack_image,
-                                                    confidence=self.confidence)
+                                                    confidence=ih.confidence)
                 else:
-                    if self.confidence:
+                    if ih.confidence:
                         LOGGER.warn("Can't set confidence because you don't "
                                     "have OpenCV (python-opencv) installed "
                                     "or a confidence level was not given.")
-                    location_res = locate_func(ref_image)
+                    location_res = locate_func(ref_image, haystack_image)
             except ImageNotFoundException as ex:
                 LOGGER.info(ex)
                 pass
@@ -310,9 +315,12 @@ class _StrategyPyautogui(_RecognizeImages):
 
 
 
-class _StrategySkimage(_RecognizeImages):
+class _StrategySkimage():
     _SKIMAGE_DEFAULT_CONFIDENCE = 0.99
-        
+
+    def __init__(self, image_horizon_instance):
+        self.ih_instance = image_horizon_instance
+
     def _try_locate(self, ref_image, haystack_image=None, locate_all=False):
         '''Tries to locate the reference image on the screen or the provided haystack_image. 
         Return values: 
@@ -320,8 +328,9 @@ class _StrategySkimage(_RecognizeImages):
         - locate_all=True:  None or list of location tuples (finds 0..n)
           (GUI Debugger mode)'''
 
-        confidence = self.confidence or self._SKIMAGE_DEFAULT_CONFIDENCE        
-        with self._suppress_keyword_on_failure():            
+        ih = self.ih_instance
+        confidence = ih.confidence or self._SKIMAGE_DEFAULT_CONFIDENCE        
+        with ih._suppress_keyword_on_failure():            
             needle_img = imread(ref_image, as_gray=True)
             haystack_img_height, needle_img_width = needle_img.shape   
             if haystack_image is None:
@@ -329,14 +338,14 @@ class _StrategySkimage(_RecognizeImages):
             else:
                 haystack_img_gray = rgb2gray(haystack_image)
             # detect edges on both images
-            self.needle_edge = self.detect_edges(needle_img)
-            self.haystack_edge = self.detect_edges(haystack_img_gray)  
+            ih.needle_edge = self.detect_edges(needle_img)
+            ih.haystack_edge = self.detect_edges(haystack_img_gray)  
             # find match peaks          
-            self.peakmap = match_template(self.haystack_edge, self.needle_edge)
+            ih.peakmap = match_template(ih.haystack_edge, ih.needle_edge)
 
             if locate_all: 
                 # https://stackoverflow.com/questions/48732991/search-for-all-templates-using-scikit-image                
-                peaks = peak_local_max(self.peakmap,threshold_rel=confidence) 
+                peaks = peak_local_max(ih.peakmap,threshold_rel=confidence) 
                 peak_coords = zip(peaks[:,1], peaks[:,0])
                 locations = []
                 for i, pk in enumerate(peak_coords):
@@ -348,18 +357,18 @@ class _StrategySkimage(_RecognizeImages):
                 else: 
                     location = []
             else: 
-                ij = np.unravel_index(np.argmax(self.peakmap), self.peakmap.shape)
+                ij = np.unravel_index(np.argmax(ih.peakmap), ih.peakmap.shape)
                 x, y = ij[::-1]
-                peak = self.peakmap[y][x]
+                peak = ih.peakmap[y][x]
                 if peak > confidence:                      
                     locations = [(x, y, needle_img_width, haystack_img_height)]                
                                     
                 # Transform index to coordinates of highest peak
-                ij = np.unravel_index(np.argmax(self.peakmap), self.peakmap.shape)
+                ij = np.unravel_index(np.argmax(ih.peakmap), ih.peakmap.shape)
                 # Extract coordinates of the highest peak
                 x, y = ij[::-1]
                 # higest peak level
-                peak = self.peakmap[y][x]        
+                peak = ih.peakmap[y][x]        
                 if peak > confidence:      
                     needle_img_height, needle_img_width = needle_img.shape          
                     location = (x, y, needle_img_width, needle_img_height)
@@ -380,8 +389,8 @@ class _StrategySkimage(_RecognizeImages):
         '''Apply edge detection on a given image'''
         return self._detect_edges(
             img,
-            self.edge_sigma,
-            self.edge_low_threshold,
-            self.edge_low_threshold
+            self.ih_instance.edge_sigma,
+            self.ih_instance.edge_low_threshold,
+            self.ih_instance.edge_low_threshold
             )
 

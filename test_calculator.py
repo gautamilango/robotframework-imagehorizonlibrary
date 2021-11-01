@@ -10,10 +10,10 @@ import pyautogui as ag
 #ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='pyautogui')
 #ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='skimage', edge_sigma=1.0)
 # ih.does_exist("win")
-ih = ImageHorizonLibrary(reference_folder='..\\..\\images', strategy='skimage')
+ih = ImageHorizonLibrary(reference_folder='C:/Users/elabit/Documents/images', strategy='skimage')
 
-haystack_image = np.array(ag.screenshot())
-foo = ih._locate_all("foo", haystack_image)
+# haystack_image = np.array(ag.screenshot())
+# foo = ih._locate_all("foo", haystack_image)
 # foo = ih._locate_all("ok")
 #foo = ih.click_image("win")
 # ih.set_strategy('skimage', edge_sigma=2, edge_low_threshold=0.1, edge_high_threshold=0.3)

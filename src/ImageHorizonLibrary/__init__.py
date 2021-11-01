@@ -39,7 +39,7 @@ from .version import VERSION
 
 __version__ = VERSION
 
-class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
+class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _RecognizeImages, _Screenshot):
     '''A cross-platform Robot Framework library for GUI automation.
 
     *Key features*: 
@@ -242,32 +242,18 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _Screenshot):
 
         self.strategy = strategy
         if strategy == 'pyautogui':
-            strategy_cls = _StrategyPyautogui
+            self.strategy_instance = _StrategyPyautogui(self)
         elif strategy == 'skimage': 
-            strategy_cls = _StrategySkimage
+            self.strategy_instance = _StrategySkimage(self)
             self.edge_sigma = edge_sigma
             self.edge_low_threshold = edge_low_threshold
             self.edge_high_threshold = edge_high_threshold
         else: 
             raise StrategyException('Invalid strategy: "%s"' % strategy)
             
-        # The challenge here is to replace a superclass of an already existing object.
-        # Base classes of the new strategy superclass (+ its superclasses in turn)
-        strategy_bases = inspect.getmro(strategy_cls)
-        # The base classes of self (saved once during init) get expanded with the strategy's base classes
-        new_bases = tuple([item for item in strategy_bases if item not in self._class_bases]) + self._class_bases
-        # Now construct a new class: keep its name, use the new bases and duplicate its namespace
-        new_class = type(self.__class__.__name__, new_bases, self.__dict__.copy())
-        new_class.__doc__ = self.__doc__
-        # Give self a new identity
-        self.__class__ = new_class
-        # Effects when switching to $strategy: 
-        # - edge_* params change (only for skimage and only if set)
-        # - self.strategd == '$strategy'
-        # - self._locate gets a bound method of _Strategy$strategy._locate 
+        # Calling protected _try_locate calls the strategy's method
+        self._try_locate = self.strategy_instance._try_locate       
         
-
-
     def _get_location(self, direction, location, offset):
         x, y = location
         offset = int(offset)
