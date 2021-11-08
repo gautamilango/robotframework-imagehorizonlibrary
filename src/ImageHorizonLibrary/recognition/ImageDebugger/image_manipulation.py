@@ -1,6 +1,7 @@
 from PIL import Image, ImageTk
 from enum import Enum, unique
 import numpy as np
+import logging
 
 
 @unique
@@ -10,7 +11,7 @@ class ImageFormat(Enum):
     IMAGETK = 2
     PATHSTR = 3
 
-class ImageContainer():
+class ImageContainer:
     """Store and retrieve haystack and needle images of different formats."""
     def save_to_img_container(self, img, is_haystack_img=False):
         """Save haystack and needle images.
@@ -26,37 +27,37 @@ class ImageContainer():
                 img.verify()
                 _PIL_img = img
             except Exception:
-                print('Invalid image')
+                logging.exception('Invalid exception')
 
-        if(is_haystack_img):
+        if is_haystack_img:
             self._haystack_image_orig_size = _PIL_img
             self._haystack_image = _PIL_img.resize((384, 216), Image.ANTIALIAS)
         else:
             self._needle_image = {'Path': img, 'Obj': _PIL_img}
 
     def get_haystack_image(self, format: ImageFormat):
-        if(format == ImageFormat.PILIMG):
+        if format == ImageFormat.PILIMG:
             return self._haystack_image
-        elif(format == ImageFormat.NUMPYARRAY):
+        elif format == ImageFormat.NUMPYARRAY:
             return np.array(self._haystack_image)
-        elif(format == ImageFormat.IMAGETK):
+        elif format == ImageFormat.IMAGETK:
             return ImageTk.PhotoImage(self._haystack_image)
 
     def get_haystack_image_orig_size(self, format: ImageFormat):
-        if(format == ImageFormat.PILIMG):
+        if format == ImageFormat.PILIMG:
             return self._haystack_image_orig_size
-        elif(format == ImageFormat.NUMPYARRAY):
+        elif format == ImageFormat.NUMPYARRAY:
             return np.array(self._haystack_image_orig_size)
-        elif(format == ImageFormat.IMAGETK):
+        elif format == ImageFormat.IMAGETK:
             return ImageTk.PhotoImage(self._haystack_image_orig_size)
 
     def get_needle_image(self, format: ImageFormat):
-        if(format == ImageFormat.PILIMG):
+        if format == ImageFormat.PILIMG:
             return self._needle_image['Obj']
-        elif(format == ImageFormat.PATHSTR):
+        elif format == ImageFormat.PATHSTR:
             return self._needle_image['Path']
-        elif(format == ImageFormat.NUMPYARRAY):
+        elif format == ImageFormat.NUMPYARRAY:
             return np.array(self._needle_image['Obj'])
-        elif(format == ImageFormat.IMAGETK):
+        elif format == ImageFormat.IMAGETK:
             return ImageTk.PhotoImage(self._needle_image['Obj'])
 

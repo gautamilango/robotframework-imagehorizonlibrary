@@ -6,7 +6,6 @@ from contextlib import contextmanager
 
 import pyautogui as ag
 from robot.api import logger as LOGGER
-from .ImageDebugger import ImageDebugger
 
 from skimage.feature import match_template, peak_local_max, canny
 from skimage.color import rgb2gray
@@ -265,6 +264,7 @@ class _RecognizeImages(object):
         return location
 
     def debug_image(self):
+        from .ImageDebugger import ImageDebugger
         debug_app = ImageDebugger(self)
     
      
