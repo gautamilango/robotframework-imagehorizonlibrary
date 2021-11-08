@@ -1,10 +1,9 @@
-from os import path
 import tkinter as tk
 from tkinter import ttk
 from tkinter import *
 from PIL import ImageTk, Image
 from .image_manipulation import ImageFormat
-import glob, os
+
 
 
 class UILocatorView(Tk):
@@ -40,14 +39,13 @@ class UILocatorView(Tk):
         # ************ Frame Select image ************ #
         frame_import_ref_image = LabelFrame(self.frame_main, text="Select reference image (.png)", padx=10, pady=10)
         frame_import_ref_image.pack(side=TOP, padx=10, pady=10, fill=X)
-
-        os.chdir(self.image_horizon_instance.reference_folder)
-        # list_images = self.image_horizon_instance.reference_folder
-        list_needle_images_names = []
-        for needle_img_name in glob.glob("*.png"):
-            list_needle_images_names.append(needle_img_name)
+        Label(frame_import_ref_image, text="Reference directory path:").pack(side=TOP, anchor=W)
+        self.ref_dir_path = StringVar(frame_import_ref_image)
+        self.label_ref_dir_path = Label(frame_import_ref_image, textvariable=self.ref_dir_path, fg='green')
+        self.label_ref_dir_path.pack(side=TOP, anchor=W)
+        list_needle_images_names = self.controller.create_list_of_images(self.image_horizon_instance.reference_folder)
         self.combobox_needle_img_name = ttk.Combobox(frame_import_ref_image, value=list_needle_images_names, width=10, state="readonly")
-        self.combobox_needle_img_name.pack(fill=X)
+        self.combobox_needle_img_name.pack(fill=X, pady=(20,0))
         self.combobox_needle_img_name.bind("<<ComboboxSelected>>", self.controller.on_select)
     
     def _frame_computation_params(self):
@@ -66,12 +64,12 @@ class UILocatorView(Tk):
         frame_strat_pyautogui.columnconfigure(1, weight=1)
 
         Label(frame_strat_pyautogui, text="Confidence level").grid(row=0, column=0, sticky=W)
-        conf_lvl_ag = StringVar(frame_strat_pyautogui)
-        conf_lvl_ag.set("0.99")
-        self.spinbox_conf_lvl_ag = Spinbox(frame_strat_pyautogui, from_=0, to=1, increment=0.01, width=4, textvariable=conf_lvl_ag)
+        self.conf_lvl_ag = StringVar(frame_strat_pyautogui)
+        self.spinbox_conf_lvl_ag = Spinbox(frame_strat_pyautogui, from_=0, to=1, increment=0.01, width=4, textvariable=self.conf_lvl_ag)
         self.spinbox_conf_lvl_ag.grid(padx=(30, 0), row=0, column=1, sticky=E)
 
-        Button(frame_computation, text='Run Strategy pyAutoGui', command=self.controller.on_click_run_pyautogui).grid(row=1, column=0, padx=10, sticky=W)
+        self.btn_run_pyautogui = Button(frame_computation, text='Detect reference image', command=self.controller.on_click_run_pyautogui)
+        self.btn_run_pyautogui.grid(row=1, column=0, padx=10, sticky=W)
 
         # ************ Frame Strategy skimage ************ #
         frame_strat_skimage = LabelFrame(frame_computation, text="Strategy skimage", padx=5, pady=5)
@@ -81,49 +79,56 @@ class UILocatorView(Tk):
         frame_strat_skimage.columnconfigure(1, weight=1)
         
         Label(frame_strat_skimage, text="Edge sigma").grid(row=0, column=0, sticky=W)
-        edge_sigma_skimage = StringVar(frame_strat_skimage)
-        edge_sigma_skimage.set("2.0")
-        self.spinbox_edge_sigma_skimage = Spinbox(frame_strat_skimage, from_=0, to=5, increment=0.01, width=4, textvariable=edge_sigma_skimage)
+        self.edge_sigma_skimage = StringVar(frame_strat_skimage)
+        self.spinbox_edge_sigma_skimage = Spinbox(frame_strat_skimage, from_=0, to=5, increment=0.01, width=4, textvariable=self.edge_sigma_skimage)
         self.spinbox_edge_sigma_skimage.grid(padx=(30, 0), row=0, column=1, sticky=E)
 
         Label(frame_strat_skimage, text="Edge low threshold").grid(row=1, column=0, sticky=W)
-        edge_low_skimage = StringVar(frame_strat_skimage)
-        edge_low_skimage.set("0.1")
-        self.spinbox_edge_low_skimage = Spinbox(frame_strat_skimage, from_=0, to=10, increment=0.01, width=4, textvariable=edge_low_skimage)
+        self.edge_low_skimage = StringVar(frame_strat_skimage)
+        self.spinbox_edge_low_skimage = Spinbox(frame_strat_skimage, from_=0, to=10, increment=0.01, width=4, textvariable=self.edge_low_skimage)
         self.spinbox_edge_low_skimage.grid(padx=(30, 0), row=1, column=1, sticky=E)
 
         Label(frame_strat_skimage, text="Edge high threshold").grid(row=2, column=0, sticky=W)
-        edge_high_skimage = StringVar(frame_strat_skimage)
-        edge_high_skimage.set("0.3")
-        self.spinbox_edge_high_skimage = Spinbox(frame_strat_skimage, from_=0, to=10, increment=0.01, width=4, textvariable=edge_high_skimage)
+        self.edge_high_skimage = StringVar(frame_strat_skimage)
+        self.spinbox_edge_high_skimage = Spinbox(frame_strat_skimage, from_=0, to=10, increment=0.01, width=4, textvariable=self.edge_high_skimage)
         self.spinbox_edge_high_skimage.grid(padx=(30, 0), row=2, column=1, sticky=E)
 
         Label(frame_strat_skimage, text="Confidence level").grid(row=3, column=0, sticky=W)
-        conf_lvl_skimage = StringVar(frame_strat_skimage)
-        conf_lvl_skimage.set("0.99")
-        self.spinbox_conf_lvl_skimage = Spinbox(frame_strat_skimage, from_=0, to=1, increment=0.01, width=4, textvariable=conf_lvl_skimage)
+        self.conf_lvl_skimage = StringVar(frame_strat_skimage)
+        self.spinbox_conf_lvl_skimage = Spinbox(frame_strat_skimage, from_=0, to=1, increment=0.01, width=4, textvariable=self.conf_lvl_skimage)
         self.spinbox_conf_lvl_skimage.grid(padx=(30, 0), row=3, column=1, sticky=E)
 
-        Button(frame_computation, text='Run Strategy skimage', command=self.controller.on_click_run_skimage).grid(row=1, column=1, padx=10, sticky=W)
+        self.btn_run_skimage = Button(frame_computation, text='Detect reference image', command=self.controller.on_click_run_skimage)
+        self.btn_run_skimage.grid(row=1, column=1, padx=10, sticky=W)
+        self.btn_edge_detection_debugger = Button(frame_computation, text='Edge detection debugger', command=self.controller.on_click_plot_results_skimage)
+        self.btn_edge_detection_debugger.grid(row=2, column=1, padx=10, sticky=W)
 
     def _frame_results(self):
         # ************ Frame Results ************ #
         frame_results = LabelFrame(self.frame_main, text="Results", padx=10, pady=10)
         frame_results.pack(side=TOP, padx=10, pady=10, fill=X)
 
-        Label(frame_results, text="Executed Strategy: ").grid(pady=(10, 0), row=0, column=0, sticky=W)
-        self.executed_strategy = StringVar(frame_results)
-        self.executed_strategy.set("None")
-        label_executed_strategy = Label(frame_results, textvariable=self.executed_strategy)
-        label_executed_strategy.grid(pady=(10, 0), row=0, column=1)
+        frame_results_details = Frame(frame_results)
+        frame_results_details.pack(side=TOP, fill=X)
 
-        Label(frame_results, text="Matches found:").grid(pady=(10, 0), row=1, column=0, sticky=W)
-        self.matches_found = StringVar(frame_results)
-        self.matches_found.set("0")
-        self.label_matches_found = Label(frame_results, textvariable=self.matches_found)
+        Label(frame_results_details, text="Executed Strategy: ").grid(pady=(10, 0), row=0, column=0, sticky=W)
+        self.executed_strategy = StringVar(frame_results_details)
+        label_executed_strategy = Label(frame_results_details, textvariable=self.executed_strategy)
+        label_executed_strategy.grid(pady=(10, 0), row=0, column=1)
+        
+        Label(frame_results_details, text="Matches found:").grid(pady=(10, 0), row=1, column=0, sticky=W)
+        self.matches_found = StringVar(frame_results_details)
+        self.label_matches_found = Label(frame_results_details, textvariable=self.matches_found)
         self.label_matches_found.grid(pady=(10, 0), row=1, column=1, sticky=W)
 
-        Button(frame_results, text='Edge detection debugger', command=self.controller.on_click_plot_results_skimage).grid(row=2, column=0, padx=0, sticky=W)
+        frame_snippet = Frame(frame_results)
+        frame_snippet.pack(side=TOP, fill=X)
+        Label(frame_snippet, text="Keyword to use this strategy:").pack(pady=(10, 0), side=TOP, anchor=W)
+        self.set_strategy_snippet = StringVar(frame_snippet)
+        self.label_strategy_snippet = Entry(frame_snippet, textvariable=self.set_strategy_snippet, width=75)
+        self.label_strategy_snippet.pack(pady=(0, 0), side=LEFT, anchor=W)
+        self.btn_copy_strategy_snippet = Button(frame_snippet, text='Copy', command=self.controller.copy_to_clipboard)
+        self.btn_copy_strategy_snippet.pack(side=RIGHT, padx=(10, 0), anchor=E)
 
     def _frame_image_viewer(self):
         # ************ Image viewer ************ #
