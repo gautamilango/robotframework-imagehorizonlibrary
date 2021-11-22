@@ -44,9 +44,8 @@ class UILocatorController:
         pyperclip.copy(self.strategy_snippet)
 
     def on_select(self, event):
-        ref_images_path = Path(self.image_horizon_instance.reference_folder)
-        path_to_ref_image = Path.joinpath(ref_images_path, self.view.combobox_needle_img_name.get())
-        self.image_container.save_to_img_container(img=path_to_ref_image.__str__())
+        ref_image = Path(self.view.combobox_needle_img_name.get())
+        self.image_container.save_to_img_container(img=ref_image.__str__())
         self.needle_img = self.image_container.get_needle_image(ImageFormat.IMAGETK)
         self.view.canvas_ref_img.itemconfig(
             self.view.ref_img,
