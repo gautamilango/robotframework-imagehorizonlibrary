@@ -1,14 +1,13 @@
 from PIL import Image, ImageTk
 from enum import Enum, unique
 import numpy as np
-import logging
 
 
 @unique
 class ImageFormat(Enum):
     PILIMG = 0
     NUMPYARRAY = 1
-    IMAGETK = 2
+    IMAGETK = 2         # ImageTk PhotoImage
     PATHSTR = 3
 
 class ImageContainer:
@@ -23,11 +22,7 @@ class ImageContainer:
         if isinstance(img, str):
             _PIL_img = Image.open(img)
         else:
-            try:
-                img.verify()
-                _PIL_img = img
-            except Exception:
-                logging.exception('Invalid exception')
+            _PIL_img = img
 
         if is_haystack_img:
             self._haystack_image_orig_size = _PIL_img

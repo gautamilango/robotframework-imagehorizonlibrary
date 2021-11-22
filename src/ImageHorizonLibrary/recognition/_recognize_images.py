@@ -9,7 +9,7 @@ from robot.api import logger as LOGGER
 
 from skimage.feature import match_template, peak_local_max, canny
 from skimage.color import rgb2gray
-from skimage.io import imread
+from skimage.io import imread, imsave
 
 import numpy as np
 
@@ -194,14 +194,15 @@ class _RecognizeImages(object):
                             'on screen. (strategy: %s)' % (reference_image, self.strategy))
             self._run_on_failure()
             raise ImageNotFoundException(reference_image)
-        if log_it:
-            LOGGER.info('Image "%s" found at %r (strategy: %s)' % (reference_image, location, self.strategy))
+
         center_point = ag.center(location)
         x = center_point.x
         y = center_point.y
         if self.has_retina:
             x = x / 2
             y = y / 2
+        if log_it:
+            LOGGER.info('Image "%s" found at %r (strategy: %s)' % (reference_image, (x,y), self.strategy))            
         return (x, y)
 
     def _locate_all(self, reference_image, haystack_image=None):   
@@ -223,7 +224,7 @@ class _RecognizeImages(object):
         '''
         with self._suppress_keyword_on_failure():
             try:
-                return bool(self._locate(reference_image, log_it=False))
+                return bool(self._locate(reference_image, log_it=True))
             except ImageNotFoundException:
                 return False
 
@@ -253,7 +254,7 @@ class _RecognizeImages(object):
         with self._suppress_keyword_on_failure():
             while time() < stop_time:
                 try:
-                    location = self._locate(reference_image, log_it=False)
+                    location = self._locate(reference_image, log_it=True)
                     break
                 except ImageNotFoundException:
                     pass
@@ -283,7 +284,7 @@ class _StrategyPyautogui():
         ih = self.ih_instance   
         location = None
         if haystack_image is None:
-            haystack_image = np.array(ag.screenshot())
+            haystack_image = ag.screenshot()
         
         if locate_all: 
             locate_func = ag.locateAll    
@@ -332,48 +333,59 @@ class _StrategySkimage():
         confidence = ih.confidence or self._SKIMAGE_DEFAULT_CONFIDENCE        
         with ih._suppress_keyword_on_failure():            
             needle_img = imread(ref_image, as_gray=True)
-            haystack_img_height, needle_img_width = needle_img.shape   
+            needle_img_name = ref_image.split("\\")[-1].split(".")[0]
+            #haystack_img_height, needle_img_width = needle_img.shape   
+            needle_img_height, needle_img_width = needle_img.shape   
             if haystack_image is None:
                 haystack_img_gray = rgb2gray(np.array(ag.screenshot()))
             else:
                 haystack_img_gray = rgb2gray(haystack_image)
-            # detect edges on both images
+
+            # Canny edge detection on both images
             ih.needle_edge = self.detect_edges(needle_img)
             ih.haystack_edge = self.detect_edges(haystack_img_gray)  
-            # find match peaks          
-            ih.peakmap = match_template(ih.haystack_edge, ih.needle_edge)
+
+            # peakmap is a "heatmap" of matching coordinates      
+            ih.peakmap = match_template(ih.haystack_edge, ih.needle_edge, pad_input=True)
+
+            # For debugging purposes
+            debug = False
+            if debug: 
+                imsave(needle_img_name + "needle.png", needle_img)
+                imsave(needle_img_name + "needle_edge.png", ih.needle_edge)
+                imsave(needle_img_name + "haystack.png", haystack_img_gray)
+                imsave(needle_img_name + "haystack_edge.png", ih.haystack_edge)
+                imsave(needle_img_name + "peakmap.png", ih.peakmap)
 
             if locate_all: 
                 # https://stackoverflow.com/questions/48732991/search-for-all-templates-using-scikit-image                
                 peaks = peak_local_max(ih.peakmap,threshold_rel=confidence) 
                 peak_coords = zip(peaks[:,1], peaks[:,0])
-                locations = []
+                location = []
                 for i, pk in enumerate(peak_coords):
-                    loc = (pk[0], pk[1], needle_img_width, haystack_img_height)
-                    #yield loc
-                    locations.append(loc)
-                if len(locations) > 0: 
-                    location = locations
-                else: 
-                    location = []
-            else: 
+                    x = pk[0]
+                    y = pk[1]    
+                    # higest peak level
+                    peak = ih.peakmap[y][x]        
+                    if peak > confidence:                                       
+                        loc = (x-needle_img_width/2, y-needle_img_height/2, needle_img_width, needle_img_height)                    
+                        location.append(loc)
+            
+            else:             
+                # translate highest index in peakmap from linear (memory) into 
+                # an index of a matrix with the peakmaps dimensions
                 ij = np.unravel_index(np.argmax(ih.peakmap), ih.peakmap.shape)
-                x, y = ij[::-1]
-                peak = ih.peakmap[y][x]
-                if peak > confidence:                      
-                    locations = [(x, y, needle_img_width, haystack_img_height)]                
-                                    
-                # Transform index to coordinates of highest peak
-                ij = np.unravel_index(np.argmax(ih.peakmap), ih.peakmap.shape)
-                # Extract coordinates of the highest peak
+                # Extract coordinates of the highest peak; xy is the coordinate
+                # where the CENTER of the reference image matched.
                 x, y = ij[::-1]
                 # higest peak level
                 peak = ih.peakmap[y][x]        
-                if peak > confidence:      
-                    needle_img_height, needle_img_width = needle_img.shape          
-                    location = (x, y, needle_img_width, needle_img_height)
+                if peak > confidence:                          
+                    # tuple of xy (topleft) and width/height         
+                    location = (x-needle_img_width/2, y-needle_img_height/2, needle_img_width, needle_img_height)
                 else:
                     location = None
+            # TODO: Also return peak level
             return location
 
     def _detect_edges(self, img, sigma, low, high):
