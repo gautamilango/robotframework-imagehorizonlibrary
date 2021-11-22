@@ -59,8 +59,9 @@ class UILocatorController:
     def _take_screenshot(self):
         # Minimize the GUI Debugger window before taking the screenshot
         self.view.wm_state('iconic')
+        self.view.withdraw()
         screenshot = self.model.capture_desktop()
-        self.view.wm_state('normal')
+        self.view.deiconify()
         return screenshot
     
     def on_click_run_pyautogui(self):
