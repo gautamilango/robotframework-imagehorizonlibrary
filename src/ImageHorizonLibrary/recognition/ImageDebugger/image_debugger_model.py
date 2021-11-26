@@ -44,16 +44,10 @@ class UILocatorModel():
         sp_peakmap.sharey(sp_haystack_img_edges)
         
         for loc in coord:
-            # highlight matched region
-            #needle_img_height, needle_img_width = needle_img_edges.shape
-            # TODO: 
-            #rect = mplt.Rectangle((x_peak-int(needle_img_width/2), y_peak-int(needle_img_height/2)), needle_img_width, needle_img_height, edgecolor='r', facecolor='none')
             rect = mplt.Rectangle((loc[0], loc[1]), loc[2], loc[3], edgecolor='r', facecolor='none')
             sp_haystack_img_edges.add_patch(rect)
-
         
         sp_peakmap.autoscale(False)    
         fig.suptitle(title, fontsize=14, fontweight='bold')
-        
         
         mplt.show()
