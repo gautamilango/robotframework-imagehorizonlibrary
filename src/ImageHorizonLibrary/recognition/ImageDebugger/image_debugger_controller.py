@@ -32,6 +32,7 @@ class UILocatorController:
         self.view.btn_run_pyautogui["state"] = "disabled"
         self.view.btn_run_skimage["state"] = "disabled"
         self.view.btn_copy_strategy_snippet["state"] = "disabled"
+        self.view.statusOrHints.set("Ready")
 
     def create_list_of_images(self, reference_folder):
         os.chdir(reference_folder)

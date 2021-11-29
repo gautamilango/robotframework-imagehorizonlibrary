@@ -9,7 +9,6 @@ class UILocatorView(Tk):
     def __init__(self, controller, image_container, image_horizon_instance):
         super().__init__()
         self.title("ImageHorizonLibrary - Debugger")
-        # self.geometry("525x700")
         self.resizable(False, False)
         self.controller = controller
         self.image_container = image_container
@@ -29,6 +28,7 @@ class UILocatorView(Tk):
         self._frame_computation_params()
         self._frame_results()
         self._frame_image_viewer()
+        self._status_bar()
 
     def _frame_main(self):
         # *************** Frame Main *************** #
@@ -139,6 +139,8 @@ class UILocatorView(Tk):
         self.canvas_desktop_img.grid(row=3, column=0, sticky="WSEN")
         self.desktop_img = self.canvas_desktop_img.create_image(384/2, 216/2, image=self.haystack_img)
         self.canvas_desktop_img.bind("<Button-1>", self._img_viewer)
+        self.canvas_desktop_img.bind("<Enter>", self._img_viewer_hover_enter)
+        self.canvas_desktop_img.bind("<Leave>", self._img_viewer_hover_leave)
 
         self.canvas_ref_img = Canvas(self.frame_image_viewer, width=1, height=1)
         self.canvas_ref_img.grid(row=3, column=1, sticky="WSEN")
@@ -148,6 +150,16 @@ class UILocatorView(Tk):
         Label(self.frame_image_viewer, text="Reference Image").grid(pady=(0, 0), row=4, column=1, sticky="WSEN")
 
     
+    # ************* Status bar *************** #
+    def _status_bar(self):
+        self.frame_statusBar = Frame(self)
+        self.frame_statusBar.pack(side=TOP, fill=X, expand=True)
+        
+        self.statusOrHints = StringVar(self.frame_statusBar)
+
+        self.statusBar = Label(self.frame_statusBar, textvariable=self.statusOrHints, bd=1, relief=SUNKEN, anchor=W)
+        self.statusBar.pack(side=BOTTOM, fill=X, expand=True)
+
     # ************* Bindings *************** #
 
     def _img_viewer(self, event=None):
@@ -156,3 +168,9 @@ class UILocatorView(Tk):
         self.haystack_img = self.image_container.get_haystack_image_orig_size(format=ImageFormat.IMAGETK)
         self.label_img_viewer = Label(img_viewer, image=self.haystack_img)
         self.label_img_viewer.pack()
+
+    def _img_viewer_hover_enter(self, event=None):
+        self.statusOrHints.set("Click to view in full screen")
+
+    def _img_viewer_hover_leave(self, event=None):
+        self.statusOrHints.set("")
