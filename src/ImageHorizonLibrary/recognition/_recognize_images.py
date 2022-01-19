@@ -9,7 +9,7 @@ from robot.api import logger as LOGGER
 
 from skimage.feature import match_template, peak_local_max, canny
 from skimage.color import rgb2gray
-from skimage.io import imread
+from skimage.io import imread, imsave
 
 import numpy as np
 
@@ -342,6 +342,15 @@ class _StrategySkimage():
             ih.haystack_edge = self.detect_edges(haystack_img_gray)  
             # find match peaks          
             ih.peakmap = match_template(ih.haystack_edge, ih.needle_edge)
+
+            # For debugging purposes
+            debug = False
+            if debug: 
+                imsave(needle_img_name + "needle.png", needle_img)
+                imsave(needle_img_name + "needle_edge.png", ih.needle_edge)
+                imsave(needle_img_name + "haystack.png", haystack_img_gray)
+                imsave(needle_img_name + "haystack_edge.png", ih.haystack_edge)
+                imsave(needle_img_name + "peakmap.png", ih.peakmap)
 
             if locate_all: 
                 # https://stackoverflow.com/questions/48732991/search-for-all-templates-using-scikit-image                
