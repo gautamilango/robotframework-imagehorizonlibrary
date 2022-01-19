@@ -81,7 +81,7 @@ class UILocatorController:
         font_color = self.model.change_color_of_label(num_of_matches_found)
         self.view.label_matches_found.config(fg=font_color)
 
-        self.strategy_snippet = f"Set Strategy pyautogui  confidence={self.image_horizon_instance.confidence}"
+        self.strategy_snippet = f"Set Strategy  pyautogui  confidence={self.image_horizon_instance.confidence}"
         self.view.set_strategy_snippet.set(self.strategy_snippet)
         self.view.btn_copy_strategy_snippet["state"] = "normal"
 
@@ -108,7 +108,7 @@ class UILocatorController:
         self.view.label_matches_found.config(fg=font_color)
         self.view.btn_edge_detection_debugger["state"] = "normal"
 
-        self.strategy_snippet = f"Set Strategy skimage  edge_sigma={self.image_horizon_instance.edge_sigma}  edge_low_threshold={self.image_horizon_instance.edge_low_threshold}  edge_high_threshold={self.image_horizon_instance.edge_high_threshold}  confidence={self.image_horizon_instance.confidence}"
+        self.strategy_snippet = f"Set Strategy  skimage  edge_sigma={self.image_horizon_instance.edge_sigma}  edge_low_threshold={self.image_horizon_instance.edge_low_threshold}  edge_high_threshold={self.image_horizon_instance.edge_high_threshold}  confidence={self.image_horizon_instance.confidence}"
         self.view.set_strategy_snippet.set(self.strategy_snippet)
         self.view.btn_copy_strategy_snippet["state"] = "normal"
 
