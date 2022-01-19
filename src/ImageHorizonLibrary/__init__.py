@@ -221,24 +221,27 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _RecognizeImages,
         self.has_cv = utils.has_cv()
         self.has_skimage = utils.has_skimage()
         self.confidence = confidence
+        self.initial_confidence = confidence
         self._class_bases = inspect.getmro(self.__class__)
-        self.set_strategy(strategy)
+        self.set_strategy(strategy, self.confidence)
         self.edge_sigma = edge_sigma
         self.edge_low_threshold = edge_low_threshold
         self.edge_high_threshold = edge_high_threshold
 
 
 
-    def set_strategy(self, strategy, edge_sigma=2.0, edge_low_threshold=0.1, edge_high_threshold=0.3):
+    def set_strategy(self, strategy, edge_sigma=2.0, edge_low_threshold=0.1, edge_high_threshold=0.3, confidence=None):
         '''Changes the way how images are detected on the screen. This can also be done globally during `Importing`.
-        Parameters:
+        Strategies:
         - ``pyautogui`` - (Default)
         - ``skimage`` - Advanced image recognition options with canny edge detection
 
         The ``skimage`` strategy allows these additional parameters:
           - ``edge_sigma`` - Gaussian blur intensity
           - ``edge_low_threshold`` - low pixel gradient threshold
-          - ``edge_high_threshold`` - high pixel gradient threshold'''
+          - ``edge_high_threshold`` - high pixel gradient threshold
+
+        Both strategies can optionally be initialized with a new confidence.'''
 
         self.strategy = strategy
         if strategy == 'pyautogui':
@@ -251,7 +254,10 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _RecognizeImages,
         else: 
             raise StrategyException('Invalid strategy: "%s"' % strategy)
             
-        # Calling protected _try_locate calls the strategy's method
+        if not confidence is None:
+            self.set_confidence(confidence)
+
+        # Linking protected _try_locate to the strategy's method
         self._try_locate = self.strategy_instance._try_locate       
         
     def _get_location(self, direction, location, offset):
@@ -364,6 +370,12 @@ class ImageHorizonLibrary(_Keyboard, _Mouse, _OperatingSystem, _RecognizeImages,
         '''
         self.screenshot_folder = screenshot_folder_path
 
+    def reset_confidence(self):
+        '''Resets the confidence level to the library default.
+        If no confidence was given during import, this is None.'''
+        LOGGER.info('Resetting confidence level to {}.'.format(self.initial_confidence))
+        self.confidence = self.initial_confidence
+        
     def set_confidence(self, new_confidence):
         '''Sets the accuracy when finding images.
 
