@@ -194,14 +194,15 @@ class _RecognizeImages(object):
                             'on screen. (strategy: %s)' % (reference_image, self.strategy))
             self._run_on_failure()
             raise ImageNotFoundException(reference_image)
-        if log_it:
-            LOGGER.info('Image "%s" found at %r (strategy: %s)' % (reference_image, location, self.strategy))
+
         center_point = ag.center(location)
         x = center_point.x
         y = center_point.y
         if self.has_retina:
             x = x / 2
             y = y / 2
+        if log_it:
+            LOGGER.info('Image "%s" found at %r (strategy: %s)' % (reference_image, (x,y), self.strategy))            
         return (x, y)
 
     def _locate_all(self, reference_image, haystack_image=None):   
@@ -223,7 +224,7 @@ class _RecognizeImages(object):
         '''
         with self._suppress_keyword_on_failure():
             try:
-                return bool(self._locate(reference_image, log_it=False))
+                return bool(self._locate(reference_image, log_it=True))
             except ImageNotFoundException:
                 return False
 
@@ -253,7 +254,7 @@ class _RecognizeImages(object):
         with self._suppress_keyword_on_failure():
             while time() < stop_time:
                 try:
-                    location = self._locate(reference_image, log_it=False)
+                    location = self._locate(reference_image, log_it=True)
                     break
                 except ImageNotFoundException:
                     pass
