@@ -37,7 +37,7 @@ class UILocatorController:
         self.view.processing_done = False
 
     def help(self):
-        webbrowser.open("/")
+        webbrowser.open("https://eficode.github.io/robotframework-imagehorizonlibrary/doc/ImageHorizonLibrary.html")
 
     def load_needle_image_names(self, combobox=None):
         os.chdir(self.image_horizon_instance.reference_folder)
